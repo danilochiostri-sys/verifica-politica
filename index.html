@@ -149,7 +149,7 @@ function nbSourceType(d){
 function questionSourceIntent(q){
  var x=normalizeSearchText(q);
  if(/cosa prevede|prevede|stabilisce|norma|legge|decreto|articolo|comma|obbliga|vieta|dispone|stanziamento/.test(x))return "normativa";
- if(/iter|esame|assegnato|commissione|conversione|approvato dal parlamento|camera|senato|disegno di legge/.test(x))return "parlamento";
+ if(/iter|esame|assegnato|commissione|conversione|convertit|approvato dal parlamento|camera|senato|disegno di legge/.test(x))return "parlamento";
  if(/ha dichiarato|ha detto|comunicato|nota|ministero|governo|presidenza del consiglio/.test(x))return "governo";
  return "all";
 }
@@ -332,6 +332,7 @@ async function notebookAsk(){
      new Promise(function(resolve){setTimeout(function(){resolve(ranked);},3500);})
    ]);
  }catch(e){}
+ ranked.sort(function(a,b){return (b._score||0)-(a._score||0);});
 
  var usable=ranked.slice(0,5);
  if(!usable.length){
@@ -351,7 +352,10 @@ async function notebookAsk(){
  });
 
  /* Estrema sintesi: una sola frase breve, poi le fonti. */
- var summary=conciseEvidenceSentence(q,usable);
+ var primary=selectPrimaryDocument(q,usable);
+ var primaryIndex=usable.indexOf(primary);
+ if(primaryIndex<0)primaryIndex=0;
+ var summary=conciseSourceSummary(q,primary);
  if(summary.length>360)summary=summary.slice(0,360)+"…";
 
  var sourceHtml=citations.map(function(d,i){
@@ -363,7 +367,7 @@ async function notebookAsk(){
    '</div>';
  }).join("");
 
- status.innerHTML="<b>Sintesi</b><div style=\"margin-top:7px;line-height:1.5\">"+esc(summary)+" "+nbCitationInline(0)+"</div>"+
+ status.innerHTML="<b>Sintesi</b><div style=\"margin-top:7px;line-height:1.5\">"+esc(summary)+" "+nbCitationInline(primaryIndex)+"</div>"+
    '<div class="nb-citation-row"><b>Fonti</b>'+sourceHtml+'</div>';
 
  nbLastAnswer={question:q,html:status.innerHTML,citations:citations};
@@ -392,6 +396,29 @@ function extractCommaPassage(text,comma){
  var next=rest.search(new RegExp("\\\\s\\\\d+\\\\.\\\\s+","i"));
  var end=next>=0?start+m[0].length+next:Math.min(clean.length,start+m[0].length+900);
  return clean.slice(start,end).trim();
+}
+function selectPrimaryDocument(query,docs){
+ var intent=questionSourceIntent(query);
+ var ranked=(docs||[]).slice().sort(function(a,b){return (b._score||0)-(a._score||0);});
+ if(intent!=="all"){
+   var same=ranked.filter(function(d){return nbSourceType(d)===intent;});
+   if(same.length)return same[0];
+ }
+ return ranked[0]||null;
+}
+function conciseSourceSummary(query,d){
+ if(!d)return "Le fonti selezionate non contengono un elemento documentale sufficiente per una sintesi.";
+ var passage=nbEvidencePassage(d);
+ if(!passage)passage=String(d.title||"");
+ var qWords=words(query).filter(function(w){return w.length>=4;});
+ var parts=passage.split(/(?<=[.!?])\s+/);
+ var best=parts[0]||passage,bestScore=-1;
+ parts.forEach(function(s){
+   var sc=0, low=normalizeSearchText(s);
+   qWords.forEach(function(w){if(low.indexOf(normalizeSearchText(w))>=0)sc++;});
+   if(sc>bestScore){bestScore=sc;best=s;}
+ });
+ return best;
 }
 function conciseEvidenceSentence(query,docs){
  var qWords=words(query).filter(function(w){return w.length>=4;});
