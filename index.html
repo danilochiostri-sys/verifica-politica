@@ -113,10 +113,11 @@ function extractAndShowClaims(){
  list.innerHTML=claims.map(function(x,i){
    return '<div class="claim-item"><div class="kind">'+esc(x.kind)+'</div>'+((x.start!=null)?'<div class="timestamp">⏱ '+formatTime(x.start)+(x.end!=null?' – '+formatTime(x.end):'')+'</div>':'')+'<div style="margin-top:5px;line-height:1.45">'+esc(x.text)+'</div>'+ (x.kind==="OPINIONE / COMMENTO"?'':'<button type="button" onclick="useClaim('+i+')">Confronta questa affermazione</button>')+'</div>';
  }).join("");
- window.detectedClaims=claims; box.style.display="block";
+ window.detectedClaims=claims; if(claims.length===1)window.currentClaim=claims[0]; box.style.display="block";
 }
 function useClaim(i){
  var x=window.detectedClaims&&window.detectedClaims[i]; if(!x)return;
+ window.currentClaim=x;
  document.getElementById("claim").value=x.text;
  verify();
 }
@@ -378,10 +379,32 @@ function findEvidence(q){
    .sort(function(a,b){return b._score-a._score;});
  return ranked.filter(function(d){return d._score>=25;}).slice(0,5);
 }
+function temporalScope(d,contentDate){
+ if(!contentDate)return {label:"Data del contenuto non specificata",class:""};
+ var dd=dateOfGlobal(d);
+ var obs=d&&d.observed_at?dateOnly(d.observed_at):null;
+ if(dd&&dd>contentDate)return {label:"Documento successivo al contenuto",class:"future"};
+ if(obs&&obs>contentDate)return {label:"Stato osservato successivamente",class:"future"};
+ return {label:"Fonte disponibile entro la data del contenuto",class:"past"};
+}
+function dateOnly(v){
+ var m=String(v||"").match(/(20\d{2})[-\/]?(\d{2})[-\/]?(\d{2})/);
+ if(!m)return null;
+ return m[1]+"-"+m[2]+"-"+m[3];
+}
+function dateOfGlobal(d){
+ if(!d)return null;
+ var s=String(d.date||"");
+ var m=s.match(/(\d{4})[\-/](\d{1,2})[\-/](\d{1,2})/);
+ if(m)return m[1]+"-"+String(m[2]).padStart(2,"0")+"-"+String(m[3]).padStart(2,"0");
+ var n=s.match(/(\d{2})(\d{2})(\d{4})/);
+ return n?n[3]+"-"+n[2]+"-"+n[1]:dateOnly(d.observed_at);
+}
 async function verify(){
  var q=document.getElementById("claim").value.trim();
  var src=document.getElementById("src").value.trim();
  var contentDate=detectContentDate();
+ if(!window.currentClaim||window.currentClaim.text!==q){window.currentClaim={text:q,start:null,end:null};}
  var out=document.getElementById("out");
  if(!q){out.innerHTML='<div class="card"><b>Inserisci l’informazione da confrontare.</b></div>';return;}
 
@@ -401,14 +424,7 @@ async function verify(){
  var has162=/\b162\b/.test(low);
  var conversion=/convertit|definitiv|legge di conversione/.test(low);
 
- function dateOf(d){
-   if(!d)return null;
-   var m=String(d.date||"").match(/(\d{4})[\-/](\d{1,2})[\-/](\d{1,2})/);
-   if(!m)m=String(d.date||"").match(/(\d{2})(\d{2})(\d{4})/);
-   if(!m)return null;
-   if(m[1].length===4)return m[1]+"-"+String(m[2]).padStart(2,"0")+"-"+String(m[3]).padStart(2,"0");
-   return m[3]+"-"+m[2]+"-"+m[1];
- }
+ function dateOf(d){ return dateOfGlobal(d); }
  function relationToContentDate(d){
    if(!contentDate||!d)return "Data del contenuto non specificata";
    var dd=dateOf(d);
@@ -448,7 +464,9 @@ async function verify(){
 
  var evidence=related.map(function(d){
    var snapshot=d.observed_at||dateOf(d);
+   var ts=temporalScope(d,contentDate);
    return '<article class="ev"><h3>'+esc(d.title||"Documento ufficiale")+'</h3>'+
+   '<div class="temporal-badge">'+esc(ts.label)+'</div>'+
    '<div class="chips"><span class="chip">'+esc(d.authority||"Fonte ufficiale")+'</span>'+
    '<span class="chip">'+esc(d.document_type||"Documento")+'</span>'+
    '<span class="chip">'+esc(d.version||"Versione non indicata")+'</span>'+
@@ -464,7 +482,7 @@ async function verify(){
  }).join("");
 
  var temporalNote=contentDate
-  ?'<div class="notice"><b>Riferimento temporale:</b> il sistema usa la data del contenuto '+esc(contentDate)+' come riferimento e indica, per ogni fonte, se il documento è precedente o successivo. Lo stato odierno non viene automaticamente proiettato nel passato.</div>'
+  ?'<div class="notice"><b>Riferimento temporale:</b> il sistema usa la data del contenuto '+esc(contentDate)+' come riferimento e indica, per ogni fonte, se il documento è precedente o successivo. Lo stato osservato successivamente non viene automaticamente proiettato nel passato.</div>'
   :'<div class="notice"><b>Riferimento temporale:</b> non è stata indicata la data del contenuto. Per una verifica normativa con cambiamenti nel tempo, aggiungerla migliora significativamente l’analisi.</div>';
 
  out.innerHTML='<div class="card"><span class="status '+relationClass+'">'+relation+'</span>'+
