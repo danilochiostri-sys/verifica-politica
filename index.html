@@ -24,7 +24,7 @@ main{max-width:1080px;margin:auto;padding:34px 20px 64px}.ey{font-size:13px;font
 <body>
 <header><div class="logo">VP</div><div class="brand"><strong>Verifica Politica</strong><small>Verifica documentale di informazioni politiche</small></div></header>
 <main>
-<section><div class="ey">Controlla un'informazione</div><h1>Verifica una dichiarazione politica con le fonti ufficiali</h1><p class="lead">Inserisci la fonte dell'informazione e il testo da controllare. Il risultato mostra l'evidenza utilizzata e il riferimento al documento istituzionale.</p></section>
+<section><div class="ey">Controlla un'informazione</div><h1>Confronta una dichiarazione politica con le fonti ufficiali</h1><p class="lead">Inserisci la fonte dell'informazione e il testo da controllare. Il sistema non esprime un giudizio politico: mette a confronto l'affermazione con le fonti ufficiali e mostra le evidenze utilizzate.</p></section>
 
 <section class="card">
 <div class="grid">
@@ -38,7 +38,7 @@ main{max-width:1080px;margin:auto;padding:34px 20px 64px}.ey{font-size:13px;font
 </label>
 </div>
 <div class="actions">
-<button type="button" onclick="verify()">Verifica informazione</button>
+<button type="button" onclick="verify()">Analizza e confronta</button>
 <button type="button" class="secondary" onclick="sample()">Usa esempio</button>
 </div>
 </section>
@@ -52,7 +52,7 @@ main{max-width:1080px;margin:auto;padding:34px 20px 64px}.ey{font-size:13px;font
 <div class="source"><strong><span class="dot"></span>Governo / Ministeri</strong><span>Documenti e comunicazioni istituzionali</span></div>
 </div>
 
-<div id="out" class="result"></div><div id="claimsPanel" class="card claims-panel"><h2 style="font-size:18px;margin:0">Affermazioni individuate</h2><p class="muted" style="font-size:12px">Separiamo le frasi che possono essere confrontate con documenti ufficiali dalle opinioni.</p><div id="claimsList"></div></div>
+<div id="out" class="result"></div><div class="notice" style="margin-top:12px"><b>Principio:</b> l’AI può aiutare a trascrivere, estrarre e normalizzare le affermazioni, ma non attribuisce un giudizio politico. Il risultato è una comparazione tra il contenuto dichiarato e le fonti ufficiali disponibili, con indicazione di data e versione quando presenti.</div><div id="claimsPanel" class="card claims-panel"><h2 style="font-size:18px;margin:0">Affermazioni individuate</h2><p class="muted" style="font-size:12px">Separiamo le frasi che possono essere confrontate con documenti ufficiali dalle opinioni.</p><div id="claimsList"></div></div>
 
 <section class="steps">
 <div class="step"><b>01 — Affermazione</b><span>Identifichiamo ciò che può essere verificato documentalmente.</span></div>
@@ -92,7 +92,7 @@ function extractAndShowClaims(){
  if(!text){document.getElementById("transcriptStatus").textContent="Inserisci o trascrivi prima un contenuto.";return;}
  var claims=extractClaims(text), box=document.getElementById("claimsPanel"), list=document.getElementById("claimsList");
  list.innerHTML=claims.map(function(x,i){
-   return '<div class="claim-item"><div class="kind">'+esc(x.kind)+'</div><div style="margin-top:5px;line-height:1.45">'+esc(x.text)+'</div>'+ (x.kind==="OPINIONE / COMMENTO"?'':'<button type="button" onclick="useClaim('+i+')">Verifica questa affermazione</button>')+'</div>';
+   return '<div class="claim-item"><div class="kind">'+esc(x.kind)+'</div><div style="margin-top:5px;line-height:1.45">'+esc(x.text)+'</div>'+ (x.kind==="OPINIONE / COMMENTO"?'':'<button type="button" onclick="useClaim('+i+')">Confronta questa affermazione</button>')+'</div>';
  }).join("");
  window.detectedClaims=claims; box.style.display="block";
 }
@@ -212,10 +212,10 @@ function classify(q,docs){
    var hay=[d.title,d.status,d.excerpt,d.reference_code,(d.keywords||[]).join(" ")].join(" ").toLowerCase();
    return has162&&/162/.test(hay)&&/in corso|assegnato|non ancora iniziat/.test(hay);
  });
- if(has162&&conversion&&pending.length)return ["CONTRADDETTA","bad","Le fonti istituzionali catalogate indicano che, alla data delle fonti utilizzate, l'iter di conversione del D.L. 162/2026 era ancora in corso."];
+ if(has162&&conversion&&pending.length)return ["ELEMENTI IN CONTRASTO","bad","L’affermazione descrive una conversione definitiva, mentre le fonti istituzionali disponibili riportano che l’iter di conversione era ancora in corso alla data della fonte."];
  var ranked=(docs||[]).map(function(d){var x=Object.assign({},d);x._score=score(q,d);return x;}).sort(function(a,b){return b._score-a._score;});
- if(ranked[0]&&ranked[0]._score>=45)return ["SUPPORTATA DALLA FONTE","ok","Sono presenti elementi documentali compatibili con l'affermazione. La verifica dipende dalla data e dalla versione della fonte."];
- return ["NON VERIFICABILE","warn","Il catalogo disponibile non contiene evidenza sufficiente per confermare o smentire con affidabilità l'affermazione."];
+ if(ranked[0]&&ranked[0]._score>=45)return ["CORRISPONDENZA DOCUMENTALE","ok","La fonte istituzionale contiene elementi compatibili con il contenuto dell’affermazione. Il sistema mostra la fonte per consentire il confronto diretto."];
+ return ["EVIDENZA INSUFFICIENTE","warn","Le fonti disponibili non consentono un confronto documentale sufficiente. L’assenza di evidenza non viene interpretata come falsità."];
 }
 function verify(){
  var q=document.getElementById("claim").value.trim(),src=document.getElementById("src").value.trim(),out=document.getElementById("out");
