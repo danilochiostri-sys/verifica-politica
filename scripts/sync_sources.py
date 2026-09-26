@@ -1,4 +1,4 @@
-import json,re,hashlib,urllib.request,urllib.parse,datetime,html as htmllib
+import json,re,hashlib,urllib.request,urllib.parse,html as htmllib,urllib.parse,datetime,html as htmllib
 from pathlib import Path
 import xml.etree.ElementTree as ET
 ROOT=Path(__file__).resolve().parents[1]; OUT=ROOT/"data"/"sources.json"; OUT.parent.mkdir(parents=True,exist_ok=True)
