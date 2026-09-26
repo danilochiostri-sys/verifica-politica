@@ -1,0 +1,117 @@
+{
+  "updated_at": "2026-09-26T21:12:00+02:00",
+  "records": [
+    {
+      "id": "gu-26g00181",
+      "title": "DECRETO-LEGGE 17 settembre 2026, n. 162",
+      "authority": "Gazzetta Ufficiale",
+      "document_type": "Decreto-legge",
+      "date": "2026-09-17",
+      "version": "Testo originario",
+      "article": "Atto completo",
+      "status": "In vigore dal 18/09/2026",
+      "reference_code": "26G00181",
+      "url": "https://www.gazzettaufficiale.it/eli/id/2026/09/17/26G00181/sg",
+      "source_url": "https://www.gazzettaufficiale.it/atto/vediMenuHTML?atto.codiceRedazionale=26G00181&atto.dataPubblicazioneGazzetta=2026-09-17&tipoSerie=serie_generale&tipoVigenza=originario",
+      "excerpt": "Disposizioni urgenti per il sostegno economico e il contenimento degli effetti derivanti dal perdurante aumento del costo dei carburanti, nonché in materia fiscale.",
+      "keywords": [
+        "decreto-legge",
+        "162",
+        "2026",
+        "n 162",
+        "17 settembre",
+        "carburanti",
+        "fiscale"
+      ]
+    },
+    {
+      "id": "senato-c3106",
+      "title": "Atto Camera n. 3106 — Conversione in legge del D.L. 17 settembre 2026, n. 162",
+      "authority": "Senato della Repubblica",
+      "document_type": "Iter parlamentare",
+      "date": "2026-09-18",
+      "version": "Situazione dell'iter",
+      "article": "Lavori preparatori",
+      "status": "Assegnato alla Camera; esame non ancora iniziato",
+      "reference_code": "C.3106",
+      "url": "https://www.senato.it/export/ddl/full/60464?leg=19",
+      "source_url": "https://www.senato.it/leg/leggi-e-documenti/disegni-di-legge/scheda-ddl?did=60464",
+      "excerpt": "Conversione in legge del decreto-legge 17 settembre 2026, n. 162. 18 settembre 2026: assegnato (non ancora iniziato l'esame).",
+      "keywords": [
+        "162",
+        "2026",
+        "conversione",
+        "convertito",
+        "convertita",
+        "definitivamente",
+        "legge",
+        "C.3106",
+        "assegnato",
+        "esame non ancora iniziato"
+      ]
+    },
+    {
+      "id": "senato-dl-current",
+      "title": "Ultimi Decreti-Legge esaminati — D.L. 162/2026",
+      "authority": "Senato della Repubblica",
+      "document_type": "Indice decreti-legge in conversione",
+      "date": "2026-09-25",
+      "version": "Pagina aggiornata",
+      "article": "Elenco decreti-legge",
+      "status": "In corso di conversione",
+      "reference_code": "D.L. 162/2026",
+      "url": "https://www.senato.it/leg/ldl_new/v3/sldlelencodlconvers.htm",
+      "source_url": "https://www.senato.it/leg/ldl_new/v3/sldlelencodlconvers.htm",
+      "excerpt": "Il D.L. 17 settembre 2026, n. 162 è elencato tra i decreti-legge in corso di conversione; per l'iter risultano C.3106 e 18 settembre 2026: assegnato (non ancora iniziato l'esame).",
+      "keywords": [
+        "162",
+        "in corso di conversione",
+        "conversione",
+        "C.3106",
+        "non ancora iniziato"
+      ]
+    }
+  ],
+  "sources": [
+    {
+      "id": "normattiva",
+      "name": "Normattiva / dati.normattiva.it",
+      "type": "normativa",
+      "url": "https://dati.normattiva.it/",
+      "coverage": "Atti normativi, versioni e multivigenza",
+      "connected": true
+    },
+    {
+      "id": "gazzetta",
+      "name": "Gazzetta Ufficiale",
+      "type": "pubblicazione",
+      "url": "https://www.gazzettaufficiale.it/",
+      "coverage": "Pubblicazione ufficiale degli atti",
+      "connected": true
+    },
+    {
+      "id": "senato",
+      "name": "Senato della Repubblica",
+      "type": "parlamento",
+      "url": "https://dati.senato.it/",
+      "coverage": "Disegni di legge e iter parlamentari",
+      "connected": true
+    },
+    {
+      "id": "camera",
+      "name": "Camera dei deputati – Open Data",
+      "type": "parlamento",
+      "url": "https://dati.camera.it/",
+      "coverage": "Atti parlamentari e dati aperti",
+      "connected": true
+    },
+    {
+      "id": "ministeri",
+      "name": "Governo / Ministeri",
+      "type": "governo",
+      "url": "https://www.gov.it/",
+      "coverage": "Documenti e comunicazioni istituzionali",
+      "connected": true
+    }
+  ]
+}
