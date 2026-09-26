@@ -51,7 +51,7 @@ main{max-width:1080px;margin:auto;padding:34px 20px 64px}.ey{font-size:13px;font
 </div>
 </section>
 
-<div class="toolbar"><strong>Fonti ufficiali collegate</strong><span class="muted" style="font-size:12px">Catalogo locale verificato</span></div>
+<div class="toolbar"><strong>Fonti ufficiali collegate</strong><span id="sourceFreshness" class="muted" style="font-size:12px">Aggiornamento automatico attivo</span></div>
 <div class="sources">
 <div class="source"><strong><span class="dot"></span>Normattiva / dati.normattiva.it</strong><span>Atti normativi, versioni e multivigenza</span></div>
 <div class="source"><strong><span class="dot"></span>Gazzetta Ufficiale</strong><span>Pubblicazione ufficiale degli atti</span></div>
@@ -107,6 +107,20 @@ main{max-width:1080px;margin:auto;padding:34px 20px 64px}.ey{font-size:13px;font
 <script>
 
 
+function formatCatalogDate(v){
+ try{var d=new Date(v);if(isNaN(d.getTime()))return String(v||"");return d.toLocaleString("it-IT",{dateStyle:"medium",timeStyle:"short"});}
+ catch(e){return String(v||"");}
+}
+function renderSourceFreshness(){
+ var el=document.getElementById("sourceSyncCard"); if(!el)return;
+ var ts=window.VP_CATALOG&&window.VP_CATALOG.updated_at;
+ var n=window.VP_CATALOG&&Array.isArray(window.VP_CATALOG.documents)?window.VP_CATALOG.documents.length:0;
+ if(!ts){
+   el.innerHTML='<b>Sincronizzazione:</b> stato non disponibile. Le fonti elencate sono configurate ma il catalogo pubblicato non contiene una data di aggiornamento.';
+   return;
+ }
+ el.innerHTML='<b>Fonti collegate automaticamente.</b> Ultimo aggiornamento riuscito del catalogo: '+esc(formatCatalogDate(ts))+' · '+n+' record. Il sito usa questo catalogo aggiornato da GitHub Actions; quando una fonte non risponde, non viene inventata alcuna informazione.';
+}
 var nbFilterMode="all", nbLastAnswer=null;
 function nbSourceType(d){
  var a=String(d&&d.authority||"").toLowerCase(), t=String(d&&d.document_type||"").toLowerCase();
@@ -267,6 +281,7 @@ function useClaim(i){
 window.nbSelected=new Set();
 loadLastNotebookNote();
 renderNotebookSources();
+renderSourceFreshness();
 var DOCS=(window.VP_CATALOG&&Array.isArray(window.VP_CATALOG.documents))?window.VP_CATALOG.documents:[];
 var selectedFile=null;
 var transcriber=null;
