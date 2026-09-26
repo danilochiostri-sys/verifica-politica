@@ -172,6 +172,37 @@ function nbHighlightSnippet(d,q){
  var sn=raw.slice(start,end);
  return (start>0?"…":"")+sn+(end<raw.length?"…":"");
 }
+function nbCitationInline(i){
+ return '<button class="nb-cite" type="button" title="Apri evidenza '+(i+1)+'" onclick="showNotebookSource('+i+')">['+(i+1)+']</button>';
+}
+function nbDocDateLine(d){
+ var parts=[];
+ if(d&&d.date)parts.push(String(d.date));
+ if(d&&d.version)parts.push(String(d.version));
+ if(d&&d.status)parts.push(String(d.status));
+ return parts.join(" · ");
+}
+function nbEvidencePassage(d){
+ return String((d&&d.evidence_passage)||((d&&d.excerpt)||"")).replace(/\s+/g," ").trim();
+}
+function nbBuildGroundedAnswer(question,docs){
+ var lead="Sulla base delle fonti selezionate, questa è una sintesi documentale. Le citazioni numerate rimandano esclusivamente ai record utilizzati.";
+ var lines=[lead];
+ docs.slice(0,4).forEach(function(d,i){
+   var passage=nbEvidencePassage(d);
+   var title=String(d.title||"Documento ufficiale");
+   var meta=nbDocDateLine(d);
+   if(passage){
+     lines.push("La fonte "+nbCitationInline(i)+" <b>"+esc(title)+"</b> riporta: “"+esc(passage.slice(0,520))+(passage.length>520?"…":"")+"”."+(meta?" <span class=\"muted\">("+esc(meta)+")</span>":""));
+   }else{
+     lines.push("La fonte "+nbCitationInline(i)+" <b>"+esc(title)+"</b> è pertinente per metadati e riferimenti, ma nel catalogo non è disponibile un passaggio testuale sufficiente.");
+   }
+ });
+ if(docs.length>1){
+   lines.push('<span class="muted">La sintesi non attribuisce intenzioni, meriti o valutazioni politiche e non interpreta l’assenza di una fonte come prova di falsità.</span>');
+ }
+ return lines.map(function(x){return '<div style="margin-top:8px">'+x+'</div>';}).join("");
+}
 async function notebookAsk(){
  var input=document.getElementById("nbQuestion"), q=String(input.value||"").trim();
  if(!q)return;
@@ -181,8 +212,12 @@ async function notebookAsk(){
  box.innerHTML+='<div class="nb-msg nb-assistant" id="nbLoading"><span class="semantic-dot"></span> Ricerca nelle fonti selezionate…</div>';
  box.scrollTop=box.scrollHeight;
  var docs=nbSelectedDocs().slice(0,120);
- var ranked=docs.map(function(d){var x=Object.assign({},d);x.__key=x.__key||[d.title,d.authority,d.reference_code,d.url].join("|");x._score=score(q,d);return x;})
-   .sort(function(a,b){return b._score-a._score;}).slice(0,50);
+ var ranked=docs.map(function(d){
+   var x=Object.assign({},d);
+   x.__key=x.__key||[d.title,d.authority,d.reference_code,d.url].join("|");
+   x._score=score(q,d);
+   return x;
+ }).sort(function(a,b){return b._score-a._score;}).slice(0,50);
  var status=document.getElementById("nbLoading");
  try{ranked=await semanticRank(q,ranked,status);}catch(e){}
  var usable=ranked.filter(function(d){return (d.semantic!=null?d.semantic>=0.42:d._score>=20);}).slice(0,5);
@@ -190,19 +225,34 @@ async function notebookAsk(){
    status.innerHTML="<b>Nessuna evidenza sufficiente nel quaderno.</b><br>Non posso ricavare una risposta documentale dalle fonti selezionate. L’assenza di una fonte non viene interpretata come prova di falsità.";
    nbLastAnswer={question:q,html:status.innerHTML,citations:[]}; return;
  }
- var parts=["Ho trovato "+usable.length+" fonte"+(usable.length===1?"":"i")+" pertinenti nel quaderno."];
- usable.forEach(function(d,i){
-   var title=esc(d.title||"Documento ufficiale"), rel=esc(d.excerpt||"Nessun estratto disponibile.");
-   parts.push('<div class="nb-citation-row"><b>['+(i+1)+'] '+title+'</b> <button class="nb-cite" type="button" onclick="showNotebookSource('+i+')">citazione</button><br><span>'+rel+'</span><br><span class="muted">'+esc(d.authority||"Fonte ufficiale")+' · '+esc(d.date||"data n/d")+' · '+esc(d.status||"stato n/d")+'</span></div>');
+ var citations=usable.map(function(d){
+   return {
+     title:d.title,url:d.url,excerpt:d.excerpt,evidence_passage:d.evidence_passage||d.excerpt,
+     evidence_basis:d.evidence_basis,authority:d.authority,date:d.date,status:d.status,
+     version:d.version,article:d.article,reference_code:d.reference_code,
+     record_fingerprint:d.record_fingerprint,semantic:d.semantic,score:d._score
+   };
  });
- status.innerHTML="<b>Risposta documentale</b><br>"+parts.join("");
- nbLastAnswer={question:q,html:status.innerHTML,citations:usable.map(function(d){return {title:d.title,url:d.url,excerpt:d.excerpt,authority:d.authority,date:d.date,status:d.status};})};
+ status.innerHTML="<b>Sintesi documentale</b>"+nbBuildGroundedAnswer(q,usable)+
+   '<div class="nb-citation-row"><b>Fonti utilizzate</b><br>'+citations.map(function(d,i){
+     return nbCitationInline(i)+' '+esc(d.title||"Documento ufficiale")+' · '+esc(d.authority||"Fonte ufficiale");
+   }).join("<br>")+'</div>';
+ nbLastAnswer={
+   question:q,
+   html:status.innerHTML,
+   citations:citations
+ };
  box.scrollTop=box.scrollHeight;
 }
 function showNotebookSource(i){
  var d=nbLastAnswer&&nbLastAnswer.citations&&nbLastAnswer.citations[i];if(!d)return;
  var out=document.getElementById("out");
- out.innerHTML='<div class="card"><span class="status ok">CITAZIONE DEL QUADERNO</span><div class="comparison-grid"><div class="comparison-side"><h3>'+esc(d.authority||"Fonte ufficiale")+'</h3><p>'+esc(d.title||"Documento ufficiale")+'</p></div><div class="comparison-side"><h3>Metadati</h3><p>'+esc(d.date||"Data non indicata")+' · '+esc(d.status||"Stato non indicato")+'</p></div></div><div class="quote"><b>Passaggio di supporto</b><br>'+esc(d.excerpt||"Nessun estratto disponibile.")+'</div><div class="notice"><b>Principio di citazione:</b> questa evidenza proviene dal catalogo istituzionale disponibile nel quaderno; per il testo integrale usa il collegamento alla fonte originale.</div><a href="'+esc(d.url||"#")+'" target="_blank" rel="noopener">Apri documento / fonte originale →</a></div>';
+ out.innerHTML='<div class="card"><span class="status ok">CITAZIONE DEL QUADERNO ['+(i+1)+']</span>'+
+ '<div class="comparison-grid"><div class="comparison-side"><h3>Fonte</h3><p>'+esc(d.authority||"Fonte ufficiale")+'</p><p style="margin-top:5px">'+esc(d.title||"Documento ufficiale")+'</p></div>'+
+ '<div class="comparison-side"><h3>Tracciabilità</h3><p>'+esc(d.date||"Data non indicata")+' · '+esc(d.version||"Versione non indicata")+'</p><p style="margin-top:5px">'+esc(d.status||"Stato non indicato")+'</p><p class="muted" style="margin-top:5px">'+esc(d.reference_code||"Riferimento non indicato")+(d.article?" · "+esc(d.article):"")+'</p></div></div>'+
+ '<div class="quote"><b>Passaggio citato</b><br>'+esc(d.evidence_passage||d.excerpt||"Nessun estratto disponibile.")+'</div>'+
+ '<div class="notice"><b>Base della citazione:</b> '+esc(d.evidence_basis||"Estratto presente nel catalogo.")+(d.record_fingerprint?' · fingerprint '+esc(d.record_fingerprint):"")+'</div>'+
+ '<a href="'+esc(d.url||"#")+'" target="_blank" rel="noopener">Apri documento / fonte originale →</a></div>';
  window.scrollTo({top:out.getBoundingClientRect().top+window.scrollY-20,behavior:"smooth"});
 }
 function notebookFromClaim(){
