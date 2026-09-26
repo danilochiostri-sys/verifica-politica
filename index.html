@@ -263,9 +263,8 @@ async function notebookAsk(){
  });
 
  /* Estrema sintesi: una sola frase breve, poi le fonti. */
- var top=usable[0], passage=String(top.evidence_passage||top.excerpt||"").replace(/\s+/g," ").trim();
- var summary=passage?passage.slice(0,320):"Le fonti selezionate risultano pertinenti, ma non contengono nel catalogo un passaggio testuale sufficiente per una sintesi.";
- if(passage.length>320)summary+="…";
+ var summary=conciseEvidenceSentence(q,usable);
+ if(summary.length>360)summary=summary.slice(0,360)+"…";
 
  var sourceHtml=citations.map(function(d,i){
    return '<div style="margin-top:10px">'+nbCitationInline(i)+' '+esc(d.title||"Documento ufficiale")+
@@ -284,6 +283,40 @@ async function notebookAsk(){
 
 function normalizeSearchText(s){
  return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9à-ÿ]+/gi," ").replace(/\s+/g," ").trim();
+}
+function articleRef(s){
+ var m=String(s||"").match(/(?:articolo|art\\.?)\\s*([0-9]+(?:-bis|-ter|-quater)?)/i);
+ return m?m[1]:null;
+}
+function commaNumber(s){
+ var m=String(s||"").match(/(?:comma|c\\.)\\s*(\\d+)/i);
+ return m?m[1]:null;
+}
+function extractCommaPassage(text,comma){
+ if(!comma)return null;
+ var clean=String(text||"").replace(/\\s+/g," ").trim();
+ var startRe=new RegExp("(?:^|\\\\s)"+String(comma)+"\\\\.\\\\s*","i");
+ var m=startRe.exec(clean);
+ if(!m)return null;
+ var start=m.index;
+ var rest=clean.slice(start+m[0].length);
+ var next=rest.search(new RegExp("\\\\s\\\\d+\\\\.\\\\s+","i"));
+ var end=next>=0?start+m[0].length+next:Math.min(clean.length,start+m[0].length+900);
+ return clean.slice(start,end).trim();
+}
+function conciseEvidenceSentence(query,docs){
+ var qWords=words(query).filter(function(w){return w.length>=4;});
+ var best="",bestScore=-1;
+ (docs||[]).slice(0,5).forEach(function(d){
+   var p=nbEvidencePassage(d);
+   if(!p)return;
+   p.split(/(?<=[.!?])\\s+/).forEach(function(s){
+     var sc=0;
+     qWords.forEach(function(w){if(normalizeSearchText(s).indexOf(normalizeSearchText(w))>=0)sc++;});
+     if(sc>bestScore){bestScore=sc;best=s;}
+   });
+ });
+ return best||String(docs&&docs[0]&&docs[0].excerpt||"").slice(0,300);
 }
 function articleNumber(s){
  var m=String(s||"").match(/(?:articolo|art\.?)[\s._-]*([0-9]+(?:-bis|-ter|-quater)?)/i);
@@ -335,21 +368,23 @@ function findBestFulltextSections(query,record,limit){
  if(!record)return [];
  var sections=Array.isArray(record.sections)?record.sections:[];
  if(!sections.length&&record.text)sections=[{article:"Testo integrale",text:record.text}];
- var qArticle=articleNumber(query), qWords=words(query);
+ var qArticle=articleRef(query), qComma=commaNumber(query), qWords=words(query);
  var ranked=sections.map(function(sec){
-   var base=String(sec.text||"").replace(/\s+/g," ").trim();
+   var base=String(sec.text||"").replace(/\\s+/g," ").trim();
    if(!base)return null;
    var articleText=normalizeSearchText(String(sec.article||""));
    var sc=scorePassage(query,base);
-   if(qArticle&&articleText.indexOf(normalizeSearchText(qArticle))>=0)sc+=0.9;
-   var topicWords=qWords.filter(function(w){return w.length>=4;});
-   var exactTopics=topicWords.filter(function(w){return normalizeSearchText(base).indexOf(normalizeSearchText(w))>=0;}).length;
-   sc+=exactTopics*0.08;
+   if(qArticle&&articleText.indexOf(normalizeSearchText(qArticle))>=0)sc+=1.2;
+   if(qComma&&extractCommaPassage(base,qComma))sc+=0.7;
+   qWords.filter(function(w){return w.length>=4;}).forEach(function(w){
+     if(normalizeSearchText(base).indexOf(normalizeSearchText(w))>=0)sc+=0.06;
+   });
    return {article:sec.article||"Testo integrale",text:base,score:sc};
  }).filter(Boolean);
  ranked.sort(function(a,b){return b.score-a.score;});
  return ranked.slice(0,limit||3);
 }
+
 function extractRelevantWindow(text,query){
  var clean=String(text||"").replace(/\s+/g," ").trim(), qWords=words(query).slice(0,10);
  var low=normalizeSearchText(clean), bestPos=0, bestHit=-1;
@@ -393,7 +428,8 @@ async function showNotebookSource(i){
    d.fulltextArticle=found.article;
    d.fulltextPassage=found.text;
    var cards=foundList.map(function(sec,n){
-     var win=extractRelevantWindow(sec.text,nbLastAnswer.question);
+     var commaPass=extractCommaPassage(sec.text,commaNumber(nbLastAnswer.question));
+     var win=commaPass?{prefix:"",text:commaPass,suffix:""}:extractRelevantWindow(sec.text,nbLastAnswer.question);
      var link=normattivaLink(d,sec.article,window.contentDateForNotebook||null);
      return '<div class="fulltext-box" style="margin-top:10px"><div class="fulltext-label">Articolo / sezione '+(n+1)+'</div>'+
        '<div class="fulltext-passage"><b>'+esc(sec.article||"Testo integrale")+'</b><br>'+esc(win.prefix+win.text+win.suffix)+'</div>'+
