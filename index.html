@@ -118,8 +118,8 @@ function sample(){
 function classify(q,top,docs){
  const low=q.toLowerCase();
  const conversionClaim=/convertit|definitiv|legge di conversione/.test(low);
- const number=(low.match(/(?:d\.l\.|decreto[- ]legge|n\.?)[^0-9]{0,8}(\\d{1,3})/i)||[])[1];
- const has162=/\\b162\\b/.test(low);
+ const number=(low.match(/(?:d\.l\.|decreto[- ]legge|n\.?)\s{0,8}(\d{1,3})/i)||[])[1];
+ const has162=/\b162\b/.test(low);
  const pendingDocs=(docs||[]).filter(function(d){
    const hay=String(d.title||"")+" "+String(d.status||"")+" "+String(d.excerpt||"")+" "+String(d.reference_code||"");
    return /in corso|assegnato|non ancora iniziato/.test(hay.toLowerCase()) && ((has162&&/162/.test(hay)) || (!has162&&number&&hay.indexOf(number)>=0));
@@ -138,7 +138,7 @@ function verify(){
     const x=Object.assign({},d); x._score=score(q,x); return x;
   }).sort(function(a,b){return b._score-a._score;});
   const top=docs[0]||null;
-  const status=classify(q,top), st=status[0], cls=status[1], explanation=status[2];
+  const status=classify(q,top,docs), st=status[0], cls=status[1], explanation=status[2];
   const evidence=docs.filter(function(d){return d._score>=20;}).slice(0,5);
   let evidenceHtml=evidence.map(function(d){
     return '<article class="ev"><h3>'+esc(d.title||"Documento ufficiale")+'</h3>'+
