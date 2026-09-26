@@ -24,7 +24,58 @@ main{max-width:1080px;margin:auto;padding:34px 20px 64px}.ey{font-size:13px;font
 .notebook{margin-top:22px}.notebook-layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:14px}.nb-panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}.nb-panel h3{font-size:13px;margin:0 0 10px}.nb-source{display:flex;gap:8px;align-items:flex-start;padding:9px 8px;border-radius:10px;margin-top:5px}.nb-source:hover{background:#f7f9fc}.nb-source input{width:auto;margin:2px 0 0}.nb-source label{font-size:12px;font-weight:650;line-height:1.3}.nb-chat{min-height:290px;display:flex;flex-direction:column}.nb-messages{flex:1;min-height:210px;max-height:520px;overflow:auto;padding:2px}.nb-msg{padding:12px 13px;border-radius:14px;margin:7px 0;line-height:1.55;font-size:13px}.nb-user{background:#eef2ff;margin-left:10%}.nb-assistant{background:#f7f8fa;margin-right:5%}.nb-cite{display:inline-flex;align-items:center;border:1px solid #c7d2fe;background:#eef2ff;color:#3730a3;border-radius:7px;padding:1px 6px;margin:0 2px;font-size:11px;font-weight:800;cursor:pointer}.nb-composer{display:flex;gap:8px;margin-top:10px}.nb-composer input{margin:0}.nb-note{margin-top:10px}.nb-note textarea{min-height:110px}.nb-source-card{border-top:1px solid var(--line);padding:10px 0}.nb-source-card:first-child{border-top:0}.nb-source-card b{font-size:12px}.nb-source-card span{display:block;color:var(--muted);font-size:11px;margin-top:3px;line-height:1.4}.nb-empty{padding:18px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:12px}.nb-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800}.nb-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.nb-tabs button{padding:7px 10px;font-size:11px}.nb-tabs button.active{background:#172033;color:#fff}.nb-count{font-size:11px;color:var(--muted);margin-left:auto}.nb-citation-row{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}.nb-citation-row a{color:var(--blue);font-weight:750;text-decoration:none;font-size:12px}.nb-source-list{max-height:430px;overflow:auto;margin-top:4px}.nb-panel details summary{list-style:none}.nb-panel details summary::-webkit-details-marker{display:none}
 @media(max-width:860px){.notebook-layout{grid-template-columns:1fr}.nb-source-list{max-height:260px;overflow:auto}}
 </style>
-<script src="data/catalog.js" onerror="window.VP_CATALOG=null"></script></head>
+<script src="data/catalog.js" onerror="window.VP_CATALOG=null">
+/* Quaderno: comportamento finale */
+window.toggleNotebookSources=function(){
+  var wrap=document.getElementById("nbSourcesWrap"), btn=document.getElementById("nbSourcesToggle");
+  if(!wrap||!btn)return;
+  var open=wrap.style.display==="block";
+  wrap.style.display=open?"none":"block";
+  btn.setAttribute("aria-expanded",String(!open));
+  btn.innerHTML='<span>Fonti del quaderno</span><span><span id="nbCountInline">'+(window.nbSourceTotal||"")+'</span> '+(open?"▸":"▾")+'</span>';
+};
+window.notebookAsk=async function(){
+  var input=document.getElementById("nbQuestion"), q=String(input&&input.value||"").trim();
+  if(!q)return;
+  var box=document.getElementById("nbMessages");
+  box.innerHTML+='<div class="nb-msg nb-user">'+nbEscHtml(q)+'</div>';
+  input.value="";
+  box.innerHTML+='<div class="nb-msg nb-assistant" id="nbLoading"><span class="semantic-dot"></span> Ricerca nelle fonti selezionate…</div>';
+  var status=document.getElementById("nbLoading");
+  var docs=nbSelectedDocs().slice(0,120);
+  if(!docs.length){status.innerHTML="<b>Nessuna fonte selezionata.</b><br>Seleziona almeno una fonte nel quaderno.";return;}
+  var ranked=docs.map(function(d){var x=Object.assign({},d);x._score=score(q,d);return x;})
+    .sort(function(a,b){return b._score-a._score;}).slice(0,20);
+  /* Il fallback lessicale è immediato: la semantica può migliorare l'ordine, ma non può bloccare la risposta. */
+  try{
+    ranked=await Promise.race([
+      semanticRank(q,ranked,status),
+      new Promise(function(resolve){setTimeout(function(){resolve(ranked);},3500);})
+    ]);
+  }catch(e){}
+  var usable=ranked.filter(function(d){return d._score>=8 || d.semantic>=0.25;}).slice(0,5);
+  if(!usable.length)usable=ranked.slice(0,3);
+  if(!usable.length){status.innerHTML="<b>Evidenza insufficiente.</b><br>Le fonti selezionate non contengono elementi sufficienti per rispondere.";return;}
+  var citations=usable.map(function(d){return {
+    title:d.title,url:d.url,excerpt:d.excerpt,evidence_passage:d.evidence_passage||d.excerpt,
+    evidence_basis:d.evidence_basis,authority:d.authority,date:d.date,status:d.status,
+    version:d.version,article:d.article,reference_code:d.reference_code,
+    record_fingerprint:d.record_fingerprint,fulltext_url:d.fulltext_url
+  };});
+  var top=usable[0], passage=nbEvidencePassage(top);
+  var summary=passage?passage.slice(0,360):String(top.title||"La fonte pertinente non contiene un estratto testuale sufficiente.");
+  if(passage&&passage.length>360)summary+="…";
+  status.innerHTML="<b>Sintesi</b><div style='margin-top:7px;line-height:1.5'>"+esc(summary)+" "+nbCitationInline(0)+"</div>"+
+    '<div class="nb-citation-row"><b>Fonti</b><br>'+citations.map(function(d,i){
+      return nbCitationInline(i)+' '+esc(d.title||"Documento ufficiale")+
+        ' · '+esc(d.authority||"Fonte ufficiale")+
+        (d.url?'<br><a href="'+esc(d.url)+'" target="_blank" rel="noopener">Apri fonte originale →</a>':"");
+    }).join("<div style='margin-top:10px'></div>")+'</div>';
+  nbLastAnswer={question:q,html:status.innerHTML,citations:citations};
+  box.scrollTop=box.scrollHeight;
+};
+window.nbSourceTotal=0;
+</script></head>
 <body>
 <header><div class="logo">VP</div><div class="brand"><strong>Verifica Politica</strong><small>Verifica documentale di informazioni politiche</small></div></header>
 <main>
