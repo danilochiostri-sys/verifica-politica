@@ -36,7 +36,7 @@ jobs:
         run: |
           git config user.name "Verifica Politica Bot"
           git config user.email "actions@users.noreply.github.com"
-          git add data/sources.json data/catalog.js
+          git add data/sources.json data/catalog.js data/fulltext
           git diff --cached --quiet && exit 0
           git commit -m "Aggiorna catalogo fonti istituzionali"
           git push
