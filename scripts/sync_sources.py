@@ -1,4 +1,4 @@
-import json,re,urllib.request,urllib.parse,datetime,html as htmllib
+import json,re,hashlib,urllib.request,urllib.parse,datetime,html as htmllib
 from pathlib import Path
 import xml.etree.ElementTree as ET
 ROOT=Path(__file__).resolve().parents[1]; OUT=ROOT/"data"/"sources.json"; OUT.parent.mkdir(parents=True,exist_ok=True)
@@ -55,7 +55,14 @@ def main():
     for d in docs:
       k=(d.get("title",""),d.get("authority",""),d.get("url",""))
       if d.get("title") and k not in seen: seen.add(k); clean.append(d)
-    OUT.write_text(json.dumps({"updated_at":datetime.datetime.now(datetime.timezone.utc).isoformat(),"sources":[
+    now=datetime.datetime.now(datetime.timezone.utc).isoformat()
+    for d in clean:
+      basis="|".join(str(d.get(k,"") or "") for k in ("title","authority","document_type","date","version","article","status","url","excerpt","reference_code"))
+      d["record_fingerprint"]=hashlib.sha256(basis.encode("utf-8")).hexdigest()[:16]
+      d["retrieved_at"]=now
+      d["evidence_passage"]=str(d.get("excerpt","") or "").strip()
+      d["evidence_basis"]="estratto presente nel catalogo sincronizzato" if d["evidence_passage"] else "nessun estratto disponibile nel catalogo sincronizzato"
+    OUT.write_text(json.dumps({"updated_at":now,"sources":[
       {"id":"normattiva","name":"Normattiva / dati.normattiva.it","type":"normativa","url":"https://dati.normattiva.it/","coverage":"Atti normativi, versioni e multivigenza","connected":True},
       {"id":"gazzetta","name":"Gazzetta Ufficiale","type":"pubblicazione","url":"https://www.gazzettaufficiale.it/","coverage":"Pubblicazione ufficiale degli atti","connected":True},
       {"id":"senato","name":"Senato della Repubblica","type":"parlamento","url":"https://dati.senato.it/","coverage":"DDL, iter, documenti e RSS","connected":True},
