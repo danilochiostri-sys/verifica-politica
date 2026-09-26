@@ -194,7 +194,7 @@ function renderDocumentHistory(d){
  var rows=rel.map(function(x){
    return '<div class="history-row"><div><b>'+esc(relationType(d,x))+'</b><br><span>'+esc(x.title||"Documento collegato")+'</span></div>'+
      '<div class="history-meta">'+esc(dateOfGlobal(x)||x.date||"data n/d")+' · '+esc(x.status||"stato n/d")+
-     (x.url?'<br><a href="'+esc(x.url)+'" target="_blank" rel="noopener">Apri fonte →</a>':"")+'</div></div>';
+     (officialUrl(x)!=="#"?'<br><a href="'+esc(officialUrl(x))+'" target="_blank" rel="noopener">Apri fonte →</a>':"")+'</div></div>';
  }).join("");
  return '<details class="history"><summary><b>Storia documentale</b> · '+rel.length+' collegamenti</summary><div class="history-list">'+rows+'</div></details>';
 }
@@ -303,6 +303,22 @@ function nbBuildGroundedAnswer(question,docs){
  }
  return lines.map(function(x){return '<div style="margin-top:8px">'+x+'</div>';}).join("");
 }
+function officialUrl(d){
+ if(!d)return "#";
+ if(d.canonical_url)return d.canonical_url;
+ var u=String(d.url||"");
+ var m=u.match(/^https:\/\/www\.gazzettaufficiale\.it\/eli\/id\/([^/]+)\/([^/]+)\/(?:sg|SG)$/i);
+ if(m){
+   var parts=m[1].split("-");
+   if(parts.length===3){
+     var date=parts[0]+"-"+parts[1]+"-"+parts[2];
+     return "https://www.gazzettaufficiale.it/atto/vediMenuHTML?atto.codiceRedazionale="+encodeURIComponent(m[2])+
+       "&atto.dataPubblicazioneGazzetta="+encodeURIComponent(date)+
+       "&tipoSerie=serie_generale&tipoVigenza=originario";
+   }
+ }
+ return u||"#";
+}
 async function notebookAsk(){
  var input=document.getElementById("nbQuestion"), q=String(input&&input.value||"").trim();
  window.contentDateForNotebook=document.getElementById("contentDate")&&document.getElementById("contentDate").value||"";
@@ -362,7 +378,7 @@ async function notebookAsk(){
    return '<div style="margin-top:10px">'+nbCitationInline(i)+' '+esc(d.title||"Documento ufficiale")+
      ' · '+esc(d.authority||"Fonte ufficiale")+
      (d.date?' · '+esc(d.date):"")+
-     (d.url?'<br><a href="'+esc(d.url)+'" target="_blank" rel="noopener">Apri fonte originale →</a>':"")+
+     (officialUrl(d)!=="#"?'<br><a href="'+esc(officialUrl(d))+'" target="_blank" rel="noopener">Apri fonte originale →</a>':"")+
      (relatedDocumentsFor(d).length?'<br><span class="muted">Storia documentale disponibile</span>':"")+
    '</div>';
  }).join("");
@@ -529,7 +545,7 @@ async function showNotebookSource(i){
  '<div class="notice"><b>Base della citazione:</b> '+esc(d.evidence_basis||"Estratto presente nel catalogo.")+(d.record_fingerprint?' · fingerprint '+esc(d.record_fingerprint):"")+'</div>'+
  renderDocumentHistory(DOCS.find(function(x){return (x.record_fingerprint&&d.record_fingerprint&&x.record_fingerprint===d.record_fingerprint)||x.url===d.url;})||d)+
  (d.fulltext_url?'<a href="'+esc(d.fulltext_url)+'" target="_blank" rel="noopener">Apri testo ufficiale →</a> ':"")+
- '<a href="'+esc(d.url||"#")+'" target="_blank" rel="noopener">Apri fonte originale →</a></div>';
+ '<a href="'+esc(officialUrl(d))+'" target="_blank" rel="noopener">Apri fonte originale →</a></div>';
  window.scrollTo({top:out.getBoundingClientRect().top+window.scrollY-20,behavior:"smooth"});
  var box=document.getElementById("fulltextCitation");
  var rec=await loadFulltextRecord(d);
@@ -994,7 +1010,7 @@ async function verify(){
    '<div class="meta-box"><b>Rapporto temporale</b><span>'+esc(relationToContentDate(d))+'</span></div></div>'+
    '<div class="quote"><b>Evidenza ufficiale</b><br>'+esc(d.excerpt||"Nessun estratto disponibile nel catalogo.")+'</div>'+
    '<div class="comparison-side mini"><b>Pertinenza semantica:</b> '+(d.semantic!=null?d.semantic.toFixed(3):"n/d")+' · <b>corrispondenza testuale:</b> '+d._score+'%</div>'+
-   '<a href="'+esc(d.url||"#")+'" target="_blank" rel="noopener">Apri la fonte ufficiale →</a></article>';
+   '<a href="'+esc(officialUrl(d))+'" target="_blank" rel="noopener">Apri la fonte ufficiale →</a></article>';
  }).join("");
 
  var temporalNote=contentDate
