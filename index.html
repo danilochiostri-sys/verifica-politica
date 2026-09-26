@@ -859,6 +859,7 @@ function dateOfGlobal(d){
  return n?n[3]+"-"+n[2]+"-"+n[1]:dateOnly(d.observed_at);
 }
 async function verify(){
+ try{
  var q=document.getElementById("claim").value.trim();
  var src=document.getElementById("src").value.trim();
  var contentDate=detectContentDate();
@@ -876,17 +877,9 @@ async function verify(){
  }).sort(function(a,b){return b._score-a._score;}).slice(0,80);
 
  var statusEl=document.getElementById("analysisStatus");
- var lexicalCandidates=candidates.slice();
- candidates=lexicalCandidates;
- try{
-   candidates=await Promise.race([
-     semanticRank(q,lexicalCandidates,statusEl),
-     new Promise(function(resolve){setTimeout(function(){resolve(lexicalCandidates);},20000);})
-   ]);
- }catch(e){
-   candidates=lexicalCandidates;
-   statusEl.innerHTML='<span class="semantic-dot"></span>Ricerca semantica non disponibile in questo momento; continuo con le fonti catalogate.';
- }
+ /* Percorso critico sincrono: il risultato viene costruito subito dal catalogo. */
+ candidates=candidates.slice();
+ statusEl.innerHTML='<span class="semantic-dot"></span>Fonti catalogate analizzate.';
 
  var low=q.toLowerCase();
  var has162=/\b162\b/.test(low);
@@ -964,8 +957,12 @@ async function verify(){
  '<div class="notice"><b>Tracciabilità:</b> fonte, documento, versione, data, stato, eventuale data di osservazione e collegamento originale vengono mantenuti separati dal commento analizzato.</div>'+
  (src?'<div class="notice"><b>Fonte indicata dall’utente:</b> '+esc(src)+'</div>':"")+
  '</div>';
+ }catch(err){
+   var outErr=document.getElementById("out");
+   if(outErr)outErr.innerHTML='<div class="card"><b>Analisi non completata.</b><br>Si è verificato un errore tecnico durante l’elaborazione. Ricarica la pagina e riprova.</div>';
+   console.error("Verifica Politica verify:",err);
+ }
 }
-
 // Inizializzazione dopo il caricamento delle definizioni
 try{
  loadLastNotebookNote();
