@@ -330,13 +330,10 @@ function useClaim(i){
  verify();
 }
 
-window.nbSelected=new Set();
-loadLastNotebookNote();
-renderNotebookSources();
-renderSourceFreshness();
 var DOCS=(window.VP_CATALOG&&Array.isArray(window.VP_CATALOG.documents))?window.VP_CATALOG.documents:[];
 var selectedFile=null;
 var transcriber=null;
+window.nbSelected=new Set();
 
 function esc(v){return String(v==null?"":v).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
 function words(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").split(/\s+/).filter(function(x){return x.length>1;});}
@@ -708,6 +705,15 @@ async function verify(){
  '<div class="notice"><b>Tracciabilità:</b> fonte, documento, versione, data, stato, eventuale data di osservazione e collegamento originale vengono mantenuti separati dal commento analizzato.</div>'+
  (src?'<div class="notice"><b>Fonte indicata dall’utente:</b> '+esc(src)+'</div>':"")+
  '</div>';
+}
+
+// Inizializzazione dopo il caricamento delle definizioni
+try{
+ loadLastNotebookNote();
+ renderNotebookSources();
+ renderSourceFreshness();
+}catch(initError){
+ console.error("Verifica Politica: inizializzazione non riuscita",initError);
 }
 </script>
 </body>
