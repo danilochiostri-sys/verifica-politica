@@ -251,8 +251,10 @@ function showNotebookSource(i){
  '<div class="comparison-grid"><div class="comparison-side"><h3>Fonte</h3><p>'+esc(d.authority||"Fonte ufficiale")+'</p><p style="margin-top:5px">'+esc(d.title||"Documento ufficiale")+'</p></div>'+
  '<div class="comparison-side"><h3>Tracciabilità</h3><p>'+esc(d.date||"Data non indicata")+' · '+esc(d.version||"Versione non indicata")+'</p><p style="margin-top:5px">'+esc(d.status||"Stato non indicato")+'</p><p class="muted" style="margin-top:5px">'+esc(d.reference_code||"Riferimento non indicato")+(d.article?" · "+esc(d.article):"")+'</p></div></div>'+
  '<div class="quote"><b>Passaggio citato</b><br>'+esc(d.evidence_passage||d.excerpt||"Nessun estratto disponibile.")+'</div>'+
+ (d.fulltext_available?'<div class="notice" style="margin-top:10px"><b>Testo integrale disponibile.</b> Il record è collegato al testo normativo sincronizzato; la citazione sopra è il passaggio conservato nel catalogo.</div>':"")+
  '<div class="notice"><b>Base della citazione:</b> '+esc(d.evidence_basis||"Estratto presente nel catalogo.")+(d.record_fingerprint?' · fingerprint '+esc(d.record_fingerprint):"")+'</div>'+
- '<a href="'+esc(d.url||"#")+'" target="_blank" rel="noopener">Apri documento / fonte originale →</a></div>';
+ (d.fulltext_url?'<a href="'+esc(d.fulltext_url)+'" target="_blank" rel="noopener">Apri testo ufficiale →</a> ':'')+
+ '<a href="'+esc(d.url||"#")+'" target="_blank" rel="noopener">Apri fonte originale →</a></div>';
  window.scrollTo({top:out.getBoundingClientRect().top+window.scrollY-20,behavior:"smooth"});
 }
 function notebookFromClaim(){
