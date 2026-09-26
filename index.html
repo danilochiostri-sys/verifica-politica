@@ -23,7 +23,7 @@ main{max-width:1080px;margin:auto;padding:34px 20px 64px}.ey{font-size:13px;font
 .semantic-status{margin-top:10px;font-size:12px;color:var(--muted);padding:10px 12px;background:#f8fafc;border-radius:10px}.semantic-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#1d4ed8;margin-right:6px}.comparison-side .mini{font-size:12px;color:var(--muted);margin-top:8px}.analysis-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}.analysis-table th,.analysis-table td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.analysis-table th{font-size:11px;text-transform:uppercase;color:var(--muted)}.temporal-badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:11px;font-weight:800;margin-top:6px}.timestamp{font-size:11px;color:var(--blue);margin-top:6px}
 .notebook{margin-top:22px}.notebook-layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:14px}.nb-panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}.nb-panel h3{font-size:13px;margin:0 0 10px}.nb-source{display:flex;gap:8px;align-items:flex-start;padding:9px 8px;border-radius:10px;margin-top:5px}.nb-source:hover{background:#f7f9fc}.nb-source input{width:auto;margin:2px 0 0}.nb-source label{font-size:12px;font-weight:650;line-height:1.3}.nb-chat{min-height:290px;display:flex;flex-direction:column}.nb-messages{flex:1;min-height:210px;max-height:520px;overflow:auto;padding:2px}.nb-msg{padding:12px 13px;border-radius:14px;margin:7px 0;line-height:1.55;font-size:13px}.nb-user{background:#eef2ff;margin-left:10%}.nb-assistant{background:#f7f8fa;margin-right:5%}.nb-cite{display:inline-flex;align-items:center;border:1px solid #c7d2fe;background:#eef2ff;color:#3730a3;border-radius:7px;padding:1px 6px;margin:0 2px;font-size:11px;font-weight:800;cursor:pointer}.nb-composer{display:flex;gap:8px;margin-top:10px}.nb-composer input{margin:0}.nb-note{margin-top:10px}.nb-note textarea{min-height:110px}.nb-source-card{border-top:1px solid var(--line);padding:10px 0}.nb-source-card:first-child{border-top:0}.nb-source-card b{font-size:12px}.nb-source-card span{display:block;color:var(--muted);font-size:11px;margin-top:3px;line-height:1.4}.nb-empty{padding:18px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:12px}.nb-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800}.nb-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.nb-tabs button{padding:7px 10px;font-size:11px}.nb-tabs button.active{background:#172033;color:#fff}.nb-count{font-size:11px;color:var(--muted);margin-left:auto}.nb-citation-row{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}.nb-citation-row a{color:var(--blue);font-weight:750;text-decoration:none;font-size:12px}.nb-source-toggle{width:100%;display:flex;justify-content:space-between;align-items:center;font-size:13px}.nb-source-toggle span:nth-child(2){margin-left:auto;margin-right:7px}.nb-source-list{max-height:420px;overflow:auto}.nb-source-list{max-height:430px;overflow:auto;margin-top:4px}.nb-panel details summary{list-style:none}.nb-panel details summary::-webkit-details-marker{display:none}
 @media(max-width:860px){.notebook-layout{grid-template-columns:1fr}.nb-source-list{max-height:260px;overflow:auto}}
-.fulltext-box{margin-top:12px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fff}.fulltext-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800}.fulltext-passage{margin-top:8px;line-height:1.6;font-size:14px}.fulltext-meta{margin-top:8px;font-size:11px;color:var(--muted)}.citation-loading{font-size:12px;color:var(--muted)}</style>
+.fulltext-box{margin-top:12px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fff}.fulltext-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800}.fulltext-passage{margin-top:8px;line-height:1.6;font-size:14px}.fulltext-meta{margin-top:8px;font-size:11px;color:var(--muted)}.citation-loading{font-size:12px;color:var(--muted)}.history{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff}.history summary{cursor:pointer;font-size:12px}.history-list{margin-top:8px}.history-row{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:12px;line-height:1.45}.history-row:first-child{border-top:0}.history-row span{color:var(--muted)}.history-meta{color:var(--muted);text-align:right}.history-meta a{color:var(--blue);font-weight:750;text-decoration:none}@media(max-width:650px){.history-row{grid-template-columns:1fr}.history-meta{text-align:left}</style>
 <script src="data/catalog.js" onerror="window.VP_CATALOG=null"></script></head>
 <body>
 <header><div class="logo">VP</div><div class="brand"><strong>Verifica Politica</strong><small>Verifica documentale di informazioni politiche</small></div></header>
@@ -149,6 +149,47 @@ function questionSourceIntent(q){
  if(/ha dichiarato|ha detto|comunicato|nota|ministero|governo|presidenza del consiglio/.test(x))return "governo";
  return "all";
 }
+
+function actKey(d){
+ var s=[d&&d.title,d&&d.reference_code,d&&d.excerpt].filter(Boolean).join(" ");
+ var y=s.match(/\b(20\d{2})\b/);
+ var n=s.match(/(?:decreto-?legge|d\.l\.|legge|disegno di legge)[^0-9]{0,18}(?:n\.?\s*)?(\d+)\b/i);
+ if(n&&y)return y[1]+":"+n[1];
+ var code=String(d&&d.reference_code||"").match(/\b(\d{4})\b/);
+ return code&&n?code[1]+":"+n[1]:null;
+}
+function relationType(a,b){
+ var at=nbSourceType(a), bt=nbSourceType(b);
+ if(at==="normativa"&&bt==="parlamento")return "ITER PARLAMENTARE";
+ if(at==="parlamento"&&bt==="normativa")return "ATTO NORMATIVO";
+ if(at===bt)return "STESSO PROVVEDIMENTO / FONTE COLLEGATA";
+ return "FONTE COLLEGATA";
+}
+function relatedDocumentsFor(d){
+ var k=actKey(d);
+ if(!k)return [];
+ var out=[];
+ DOCS.forEach(function(x){
+   if(x===d)return;
+   if(actKey(x)===k)out.push(x);
+ });
+ out.sort(function(a,b){
+   var da=dateOfGlobal(a)||"9999-99-99", db=dateOfGlobal(b)||"9999-99-99";
+   return da.localeCompare(db);
+ });
+ return out.slice(0,8);
+}
+function renderDocumentHistory(d){
+ var rel=relatedDocumentsFor(d);
+ if(!rel.length)return '<div class="notice"><b>Storia documentale:</b> non sono presenti nel catalogo altri record collegabili con sufficiente affidabilità.</div>';
+ var rows=rel.map(function(x){
+   return '<div class="history-row"><div><b>'+esc(relationType(d,x))+'</b><br><span>'+esc(x.title||"Documento collegato")+'</span></div>'+
+     '<div class="history-meta">'+esc(dateOfGlobal(x)||x.date||"data n/d")+' · '+esc(x.status||"stato n/d")+
+     (x.url?'<br><a href="'+esc(x.url)+'" target="_blank" rel="noopener">Apri fonte →</a>':"")+'</div></div>';
+ }).join("");
+ return '<details class="history"><summary><b>Storia documentale</b> · '+rel.length+' collegamenti</summary><div class="history-list">'+rows+'</div></details>';
+}
+
 function sourceRolePriority(q,d){
  var intent=questionSourceIntent(q);
  var type=nbSourceType(d);
@@ -290,6 +331,7 @@ async function notebookAsk(){
      ' · '+esc(d.authority||"Fonte ufficiale")+
      (d.date?' · '+esc(d.date):"")+
      (d.url?'<br><a href="'+esc(d.url)+'" target="_blank" rel="noopener">Apri fonte originale →</a>':"")+
+     (relatedDocumentsFor(d).length?'<br><span class="muted">Storia documentale disponibile</span>':"")+
    '</div>';
  }).join("");
 
@@ -430,6 +472,7 @@ async function showNotebookSource(i){
  '<div id="fulltextCitation" class="fulltext-box"><div class="fulltext-label">Ricerca nel testo integrale</div><div class="citation-loading">Recupero del testo ufficiale sincronizzato…</div></div>'+
  '<div class="quote"><b>Passaggio del catalogo</b><br>'+esc(d.evidence_passage||d.excerpt||"Nessun estratto disponibile.")+'</div>'+
  '<div class="notice"><b>Base della citazione:</b> '+esc(d.evidence_basis||"Estratto presente nel catalogo.")+(d.record_fingerprint?' · fingerprint '+esc(d.record_fingerprint):"")+'</div>'+
+ renderDocumentHistory(DOCS.find(function(x){return (x.record_fingerprint&&d.record_fingerprint&&x.record_fingerprint===d.record_fingerprint)||x.url===d.url;})||d)+
  (d.fulltext_url?'<a href="'+esc(d.fulltext_url)+'" target="_blank" rel="noopener">Apri testo ufficiale →</a> ':"")+
  '<a href="'+esc(d.url||"#")+'" target="_blank" rel="noopener">Apri fonte originale →</a></div>';
  window.scrollTo({top:out.getBoundingClientRect().top+window.scrollY-20,behavior:"smooth"});
