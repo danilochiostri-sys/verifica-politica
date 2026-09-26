@@ -135,12 +135,31 @@ function toggleNotebookSources(){
  if(arrow)arrow.textContent=open?"▸":"▾";
 }
 function nbSourceType(d){
- var a=String(d&&d.authority||"").toLowerCase(), t=String(d&&d.document_type||"").toLowerCase();
+ var a=String(d&&d.authority||"").toLowerCase();
+ var t=String(d&&d.document_type||"").toLowerCase();
  if(/normattiva|gazzetta/.test(a)||/decreto|legge|regolamento|ordinanza/.test(t))return "normativa";
- if(/senato|camera|parlament/.test(a)||/ddl|disegno|atto parlamentare/.test(t))return "parlamento";
- if(/minister|governo/.test(a))return "governo";
+ if(/senato|camera|parlament/.test(a)||/ddl|disegno|atto parlamentare|iter/.test(t))return "parlamento";
+ if(/minister|governo|presidenza del consiglio|dipartimento/.test(a)||/comunicato|nota|circolare|minister/.test(t))return "governo";
  return "other";
 }
+function questionSourceIntent(q){
+ var x=normalizeSearchText(q);
+ if(/cosa prevede|prevede|stabilisce|norma|legge|decreto|articolo|comma|obbliga|vieta|dispone|stanziamento/.test(x))return "normativa";
+ if(/iter|esame|assegnato|commissione|conversione|approvato dal parlamento|camera|senato|disegno di legge/.test(x))return "parlamento";
+ if(/ha dichiarato|ha detto|comunicato|nota|ministero|governo|presidenza del consiglio/.test(x))return "governo";
+ return "all";
+}
+function sourceRolePriority(q,d){
+ var intent=questionSourceIntent(q);
+ var type=nbSourceType(d);
+ if(intent==="all")return 0;
+ if(type===intent)return 18;
+ if(intent==="normativa"&&type==="parlamento")return 7;
+ if(intent==="parlamento"&&type==="normativa")return 7;
+ if(intent==="governo"&&type==="parlamento")return 4;
+ return -4;
+}
+
 function nbFilteredDocs(){
  return DOCS.filter(function(d){return nbFilterMode==="all"||nbSourceType(d)===nbFilterMode;});
 }
@@ -158,7 +177,7 @@ function renderNotebookSources(){
  list.innerHTML=docs.slice(0,120).map(function(d,i){
    var key=d.__key||[d.title,d.url].join("|");
    var checked=selected.has(key)?" checked":"";
-   return '<div class="nb-source"><input type="checkbox" id="nb_'+i+'" '+checked+' onchange="nbToggleSource('+JSON.stringify(key)+',this.checked)"><label for="nb_'+i+'">'+esc(d.title||"Documento ufficiale")+'<span>'+esc(d.authority||"Fonte ufficiale")+' · '+esc(d.date||"data n/d")+'</span></label></div>';
+   return '<div class="nb-source"><input type="checkbox" id="nb_'+i+'" '+checked+' onchange="nbToggleSource('+JSON.stringify(key)+',this.checked)"><label for="nb_'+i+'">'+esc(d.title||"Documento ufficiale")+'<span>'+esc(d.authority||"Fonte ufficiale")+' · '+esc(d.date||"data n/d")+' · '+esc(nbSourceType(d))+'</span></label></div>';
  }).join("")||'<div class="nb-empty">Nessuna fonte nel filtro selezionato.</div>';
  count.textContent=docs.length+" fonti"; var inline=document.getElementById("nbCountInline"); if(inline)inline.textContent="· "+docs.length+" fonti";
 }
@@ -233,7 +252,7 @@ async function notebookAsk(){
  var ranked=docs.map(function(d){
    var x=Object.assign({},d);
    x.__key=x.__key||[d.title,d.authority,d.reference_code,d.url].join("|");
-   x._score=score(q,d);
+   x._score=score(q,d)+sourceRolePriority(q,d);
    return x;
  }).sort(function(a,b){return b._score-a._score;}).slice(0,25);
 
@@ -809,7 +828,7 @@ async function verify(){
  var candidates=DOCS.map(function(d){
    var x=Object.assign({},d);
    x.__key=[d.title,d.authority,d.reference_code,d.url].join("|");
-   x._score=score(q,d);
+   x._score=score(q,d)+(sourceRolePriority(q,d)*0.5);
    return x;
  }).sort(function(a,b){return b._score-a._score;}).slice(0,80);
 
