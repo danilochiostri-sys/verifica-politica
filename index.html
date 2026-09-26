@@ -331,26 +331,40 @@ function scorePassage(query,text){
  var len=Math.max(1,q.length);
  return hit/len;
 }
-function findBestFulltextPassage(query,record){
- if(!record)return null;
+function findBestFulltextSections(query,record,limit){
+ if(!record)return [];
  var sections=Array.isArray(record.sections)?record.sections:[];
- var qArticle=articleNumber(query);
- var pool=sections.length?sections:[{article:"Testo integrale",text:record.text||""}];
- var best=null;
- pool.forEach(function(s){
-   var base=String(s.text||"");
-   var articleMatch=qArticle&&normalizeSearchText(String(s.article||"")).indexOf(normalizeSearchText(qArticle))>=0;
-   var sc=scorePassage(query,base)+(articleMatch?0.75:0);
-   if(!best||sc>best.score)best={article:s.article||"Testo integrale",text:base,score:sc};
+ if(!sections.length&&record.text)sections=[{article:"Testo integrale",text:record.text}];
+ var qArticle=articleNumber(query), qWords=words(query);
+ var ranked=sections.map(function(sec){
+   var base=String(sec.text||"").replace(/\s+/g," ").trim();
+   if(!base)return null;
+   var articleText=normalizeSearchText(String(sec.article||""));
+   var sc=scorePassage(query,base);
+   if(qArticle&&articleText.indexOf(normalizeSearchText(qArticle))>=0)sc+=0.9;
+   var topicWords=qWords.filter(function(w){return w.length>=4;});
+   var exactTopics=topicWords.filter(function(w){return normalizeSearchText(base).indexOf(normalizeSearchText(w))>=0;}).length;
+   sc+=exactTopics*0.08;
+   return {article:sec.article||"Testo integrale",text:base,score:sc};
+ }).filter(Boolean);
+ ranked.sort(function(a,b){return b.score-a.score;});
+ return ranked.slice(0,limit||3);
+}
+function extractRelevantWindow(text,query){
+ var clean=String(text||"").replace(/\s+/g," ").trim(), qWords=words(query).slice(0,10);
+ var low=normalizeSearchText(clean), bestPos=0, bestHit=-1;
+ qWords.forEach(function(w){
+   var p=low.indexOf(normalizeSearchText(w));
+   if(p>=0&&p>bestHit){bestHit=p;bestPos=p;}
  });
- if(!best||!best.text)return null;
- var text=best.text.replace(/\s+/g," ").trim();
- var qWords=words(query).slice(0,8);
- var pos=0, low=normalizeSearchText(text);
- qWords.some(function(w){var p=low.indexOf(normalizeSearchText(w));if(p>=0){pos=Math.max(0,p-150);return true;}return false;});
- if(pos>text.length)pos=0;
- var passage=text.slice(pos,Math.min(text.length,pos+850));
- return {article:best.article,text:passage,score:best.score,hash:record.text_hash,source_url:record.source_url};
+ var start=Math.max(0,bestPos-180), end=Math.min(clean.length,start+900);
+ return {text:clean.slice(start,end),prefix:start>0?"…":"",suffix:end<clean.length?"…":""};
+}
+function findBestFulltextPassage(query,record){
+ var ranked=findBestFulltextSections(query,record,1);
+ if(!ranked.length)return null;
+ var best=ranked[0], win=extractRelevantWindow(best.text,query);
+ return {article:best.article,text:win.prefix+win.text+win.suffix,score:best.score,hash:record.text_hash,source_url:record.source_url};
 }
 
 async function showNotebookSource(i){
@@ -372,15 +386,21 @@ async function showNotebookSource(i){
    box.innerHTML='<div class="fulltext-label">Ricerca nel testo integrale</div><div class="notice" style="margin:8px 0 0">Il testo integrale non è ancora presente nel catalogo pubblicato. La citazione rimane quindi limitata all’evidenza conservata nel record.</div>';
    return;
  }
- var found=findBestFulltextPassage(nbLastAnswer.question,rec);
+ var foundList=findBestFulltextSections(nbLastAnswer.question,rec,3);
+ var found=foundList[0]||null;
  var articleLink=normattivaLink(d,found&&found.article,window.contentDateForNotebook||null);
  if(found){
    d.fulltextArticle=found.article;
    d.fulltextPassage=found.text;
-   box.innerHTML='<div class="fulltext-label">Passaggio più pertinente nel testo integrale</div><div class="fulltext-passage">'+esc(found.text)+'</div>'+
-     '<div class="fulltext-meta"><b>Riferimento:</b> '+esc(found.article||"Testo integrale")+' · <b>Hash:</b> '+esc(found.hash||"n/d")+
-     (articleLink?' · <a href="'+esc(articleLink)+'" target="_blank" rel="noopener">Apri questo articolo in Normattiva →</a>':"")+
-     '</div>';
+   var cards=foundList.map(function(sec,n){
+     var win=extractRelevantWindow(sec.text,nbLastAnswer.question);
+     var link=normattivaLink(d,sec.article,window.contentDateForNotebook||null);
+     return '<div class="fulltext-box" style="margin-top:10px"><div class="fulltext-label">Articolo / sezione '+(n+1)+'</div>'+
+       '<div class="fulltext-passage"><b>'+esc(sec.article||"Testo integrale")+'</b><br>'+esc(win.prefix+win.text+win.suffix)+'</div>'+
+       '<div class="fulltext-meta">Pertinenza documentale: '+sec.score.toFixed(2)+(link?' · <a href="'+esc(link)+'" target="_blank" rel="noopener">Apri in Normattiva →</a>':"")+'</div></div>';
+   }).join("");
+   box.innerHTML='<div class="fulltext-label">Parti più pertinenti nel testo integrale</div>'+cards+
+     '<div class="fulltext-meta" style="margin-top:10px"><b>Hash documento:</b> '+esc(found.hash||"n/d")+'</div>';
  }else{
    box.innerHTML='<div class="fulltext-label">Testo integrale</div><div class="notice" style="margin:8px 0 0">Il testo è disponibile, ma non è stato individuato un passaggio sufficientemente pertinente alla domanda.</div>';
  }
