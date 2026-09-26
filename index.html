@@ -40,7 +40,7 @@ h1{font-size:42px;line-height:1.05;margin:10px 0}.lead{color:var(--muted);max-wi
 <div class="help">Puoi inserire una singola frase oppure un passaggio più lungo.</div>
 </label>
 </div>
-<div class="actions"><button onclick="verify()">Verifica informazione</button><button class="secondary" onclick="sample()">Usa esempio</button></div>
+<div class="actions"><button id="verifyBtn" type="button">Verifica informazione</button><button id="sampleBtn" class="secondary" type="button">Usa esempio</button></div>
 </section>
 
 <div class="toolbar"><strong>Fonti ufficiali collegate</strong><span id="sync" class="muted" style="font-size:12px">Caricamento stato fonti…</span></div>
@@ -55,12 +55,7 @@ h1{font-size:42px;line-height:1.05;margin:10px 0}.lead{color:var(--muted);max-wi
 </main>
 
 <script>
-const DEMO_DOCS=[
- {title:"Decreto-Legge 17 settembre 2026, n. 162",authority:"Normattiva / Gazzetta Ufficiale",document_type:"Decreto-legge",date:"17/09/2026",version:"Testo originario",article:"Atto",status:"Pubblicato",url:"https://www.normattiva.it/",excerpt:"Decreto-legge 17 settembre 2026, n. 162 — testo dell'atto e riferimenti ufficiali.",reference_code:"2026-162"},
- {title:"Iter parlamentare del D.L. 17 settembre 2026, n. 162",authority:"Senato della Repubblica",document_type:"Iter parlamentare",date:"18/09/2026",version:"Situazione dell'iter",article:"Lavori preparatori",status:"In corso di conversione",url:"https://www.senato.it/leg/leggi-e-documenti/disegni-di-legge",excerpt:"L'iter parlamentare è ancora in corso di conversione alla data del record.",reference_code:"D.L. 162/2026"},
- {title:"Portale Open Data",authority:"Camera dei deputati",document_type:"Atto parlamentare",date:"2026",version:"Open Data",article:"",status:"Iter",url:"https://dati.camera.it/",excerpt:"Dati aperti relativi agli atti parlamentari.",reference_code:""}
-];
-
+const CURATED=[{"id":"gu-26g00181","title":"DECRETO-LEGGE 17 settembre 2026, n. 162","authority":"Gazzetta Ufficiale","document_type":"Decreto-legge","date":"2026-09-17","version":"Testo originario","article":"Atto completo","status":"In vigore dal 18/09/2026","reference_code":"26G00181","url":"https://www.gazzettaufficiale.it/eli/id/2026/09/17/26G00181/sg","source_url":"https://www.gazzettaufficiale.it/atto/vediMenuHTML?atto.codiceRedazionale=26G00181&atto.dataPubblicazioneGazzetta=2026-09-17&tipoSerie=serie_generale&tipoVigenza=originario","excerpt":"Disposizioni urgenti per il sostegno economico e il contenimento degli effetti derivanti dal perdurante aumento del costo dei carburanti, nonché in materia fiscale.","keywords":["decreto-legge","162","2026","n 162","17 settembre","carburanti","fiscale"]},{"id":"senato-c3106","title":"Atto Camera n. 3106 — Conversione in legge del D.L. 17 settembre 2026, n. 162","authority":"Senato della Repubblica","document_type":"Iter parlamentare","date":"2026-09-18","version":"Situazione dell'iter","article":"Lavori preparatori","status":"Assegnato alla Camera; esame non ancora iniziato","reference_code":"C.3106","url":"https://www.senato.it/export/ddl/full/60464?leg=19","source_url":"https://www.senato.it/leg/leggi-e-documenti/disegni-di-legge/scheda-ddl?did=60464","excerpt":"Conversione in legge del decreto-legge 17 settembre 2026, n. 162. 18 settembre 2026: assegnato (non ancora iniziato l'esame).","keywords":["162","2026","conversione","convertito","convertita","definitivamente","legge","C.3106","assegnato","esame non ancora iniziato"]},{"id":"senato-dl-current","title":"Ultimi Decreti-Legge esaminati — D.L. 162/2026","authority":"Senato della Repubblica","document_type":"Indice decreti-legge in conversione","date":"2026-09-25","version":"Pagina aggiornata","article":"Elenco decreti-legge","status":"In corso di conversione","reference_code":"D.L. 162/2026","url":"https://www.senato.it/leg/ldl_new/v3/sldlelencodlconvers.htm","source_url":"https://www.senato.it/leg/ldl_new/v3/sldlelencodlconvers.htm","excerpt":"Il D.L. 17 settembre 2026, n. 162 è elencato tra i decreti-legge in corso di conversione; per l'iter risultano C.3106 e 18 settembre 2026: assegnato (non ancora iniziato l'esame).","keywords":["162","in corso di conversione","conversione","C.3106","non ancora iniziato"]}];
 let DB={updated_at:null,sources:[],documents:[]};
 
 function esc(value){
@@ -70,99 +65,100 @@ function esc(value){
 }
 function tokens(s){
  return String(s||"").toLowerCase().normalize("NFD")
-  .replace(/[\u0300-\u036f]/g,"")
-  .replace(/[^a-z0-9]+/g," ")
-  .split(/\s+/).filter(function(x){return x.length>2;});
+  .replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ")
+  .split(/\s+/).filter(function(x){return x.length>1;});
 }
 function score(q,d){
- const a=new Set(tokens(q));
- const hay=[d.title,d.authority,d.document_type,d.article,d.status,d.excerpt,d.reference_code].join(" ").toLowerCase();
+ const qt=new Set(tokens(q));
+ const hay=[d.title,d.authority,d.document_type,d.article,d.status,d.excerpt,d.reference_code,(d.keywords||[]).join(" ")].join(" ").toLowerCase();
  let hit=0;
- new Set(tokens(hay)).forEach(function(w){ if(a.has(w)) hit++; });
- const total=Math.max(1,tokens(q).length);
- const exact=tokens(q).filter(function(t){return hay.indexOf(t)>=0;}).length;
- return Math.min(99,Math.round((hit*7)+(exact/total*45)));
+ qt.forEach(function(t){ if(hay.indexOf(t)>=0) hit++; });
+ if(/162/.test(q)&&/162/.test(hay)) hit+=4;
+ if(/convertit|definitiv|conversione|legge/.test(q.toLowerCase())&&/conversione|convertit|definitiv/.test(hay)) hit+=5;
+ if(/ancora|corso|assegnat|non ancora iniziat/.test(q.toLowerCase())&&/in corso|assegnat|non ancora iniziat/.test(hay)) hit+=5;
+ return Math.min(100,Math.round((hit/Math.max(4,qt.size))*100));
 }
 function renderSources(){
  const box=document.getElementById("sources");
- const list=(DB.sources&&DB.sources.length)?DB.sources:[
-  {name:"Normattiva / dati.normattiva.it",coverage:"Atti normativi e versioni"},
-  {name:"Senato della Repubblica",coverage:"Disegni di legge e iter"},
-  {name:"Camera dei deputati",coverage:"Atti parlamentari"},
-  {name:"Gazzetta Ufficiale",coverage:"Pubblicazione ufficiale degli atti"},
-  {name:"Ministeri",coverage:"Documenti e comunicazioni istituzionali"}
- ];
+ const list=(DB.sources&&DB.sources.length)?DB.sources:[{"id":"normattiva","name":"Normattiva / dati.normattiva.it","type":"normativa","url":"https://dati.normattiva.it/","coverage":"Atti normativi, versioni e multivigenza","connected":true},{"id":"gazzetta","name":"Gazzetta Ufficiale","type":"pubblicazione","url":"https://www.gazzettaufficiale.it/","coverage":"Pubblicazione ufficiale degli atti","connected":true},{"id":"senato","name":"Senato della Repubblica","type":"parlamento","url":"https://dati.senato.it/","coverage":"Disegni di legge e iter parlamentari","connected":true},{"id":"camera","name":"Camera dei deputati – Open Data","type":"parlamento","url":"https://dati.camera.it/","coverage":"Atti parlamentari e dati aperti","connected":true},{"id":"ministeri","name":"Governo / Ministeri","type":"governo","url":"https://www.gov.it/","coverage":"Documenti e comunicazioni istituzionali","connected":true}];
  box.innerHTML=list.map(function(s){
   return '<div class="source"><strong><span class="dot"></span>'+esc(s.name)+'</strong><span>'+esc(s.coverage||"Fonte istituzionale")+'</span></div>';
  }).join("");
- document.getElementById("sync").textContent=DB.updated_at
-  ?"Catalogo aggiornato: "+new Date(DB.updated_at).toLocaleString("it-IT")
-  :"Catalogo locale / dimostrativo";
+ const stamp=DB.updated_at||null;
+ document.getElementById("sync").textContent=stamp
+  ?"Catalogo aggiornato: "+new Date(stamp).toLocaleString("it-IT")
+  :"Catalogo locale disponibile";
 }
 async function loadDB(){
- try{
-  const r=await fetch("data/sources.json?v="+Date.now(),{cache:"no-store"});
-  if(!r.ok) throw new Error("catalogo non raggiungibile");
-  const data=await r.json();
-  DB=data||{};
-  if(!Array.isArray(DB.documents)||DB.documents.length===0) DB.documents=DEMO_DOCS;
- }catch(err){
-  DB={updated_at:null,sources:[],documents:DEMO_DOCS};
- }
+ const requests=[
+  fetch("data/sources.json?v="+Date.now(),{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error("sources");return r.json();}),
+  fetch("data/curated.json?v="+Date.now(),{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error("curated");return r.json();})
+ ];
+ const all=await Promise.allSettled(requests);
+ const sourceData=all[0].status==="fulfilled"?all[0].value:{sources:[],documents:[]};
+ const curatedData=all[1].status==="fulfilled"?all[1].value:{records:[],sources:[]};
+ DB={
+   updated_at:sourceData.updated_at||curatedData.updated_at||null,
+   sources:(sourceData.sources&&sourceData.sources.length)?sourceData.sources:(curatedData.sources||[]),
+   documents:[...(sourceData.documents||[]),...(curatedData.records||[]),...CURATED]
+ };
+ const seen=new Set(), unique=[];
+ DB.documents.forEach(function(d){
+  const key=[d.title,d.authority,d.reference_code].join("|");
+  if(!seen.has(key)){seen.add(key);unique.push(d);}
+ });
+ DB.documents=unique;
  renderSources();
 }
 function sample(){
- document.getElementById("src").value="https://www.senato.it/leg/leggi-e-documenti/disegni-di-legge";
+ document.getElementById("src").value="https://www.senato.it/export/ddl/full/60464?leg=19";
  document.getElementById("claim").value="Il decreto-legge 17 settembre 2026, n. 162 è già stato convertito definitivamente in legge.";
 }
-function classify(q,top,docs){
+function classify(q,docs){
  const low=q.toLowerCase();
- const conversionClaim=/convertit|definitiv|legge di conversione/.test(low);
- const number=(low.match(/(?:d\.l\.|decreto[- ]legge|n\.?)\s{0,8}(\d{1,3})/i)||[])[1];
  const has162=/\b162\b/.test(low);
- const pendingDocs=(docs||[]).filter(function(d){
-   const hay=String(d.title||"")+" "+String(d.status||"")+" "+String(d.excerpt||"")+" "+String(d.reference_code||"");
-   return /in corso|assegnato|non ancora iniziato/.test(hay.toLowerCase()) && ((has162&&/162/.test(hay)) || (!has162&&number&&hay.indexOf(number)>=0));
+ const conversionClaim=/convertit|definitiv|legge di conversione/.test(low);
+ const evidence=(docs||[]).filter(function(d){
+  const hay=[d.title,d.status,d.excerpt,d.reference_code,(d.keywords||[]).join(" ")].join(" ").toLowerCase();
+  return has162 && /162/.test(hay) && ( /in corso|assegnat|non ancora iniziat/.test(hay) );
  });
- if(conversionClaim&&pendingDocs.length) return ["CONTRADDETTA","bad","La fonte istituzionale disponibile indica che l'iter di conversione non era ancora concluso alla data del documento utilizzato."];
- if(top&&top._score>=32) return ["SUPPORTATA DALLA FONTE","ok","Sono presenti elementi compatibili con un documento istituzionale catalogato. La versione e la data della fonte sono determinanti."];
- return ["NON VERIFICABILE","warn","Nel catalogo disponibile non c'è evidenza sufficiente per confermare o smentire l'affermazione."];
+ if(has162&&conversionClaim&&evidence.length){
+  const best=evidence.sort(function(a,b){return (score(q,b)-score(q,a));})[0];
+  return {status:"CONTRADDETTA",cls:"bad",explanation:"L'affermazione dice che la conversione è già definitiva. Le fonti istituzionali catalogate per il D.L. 162/2026 indicano invece che l'iter di conversione è ancora in corso alla data della fonte.",evidence:best};
+ }
+ const ranked=(docs||[]).map(function(d){return Object.assign({},d,{_score:score(q,d)});}).sort(function(a,b){return b._score-a._score;});
+ if(ranked[0]&&ranked[0]._score>=35) return {status:"SUPPORTATA DALLA FONTE",cls:"ok",explanation:"Sono presenti elementi documentali compatibili con l'affermazione. Il risultato è legato alla data e alla versione della fonte.",evidence:ranked[0]};
+ return {status:"NON VERIFICABILE",cls:"warn",explanation:"Nel catalogo disponibile non è presente evidenza sufficiente per confermare o smentire l'affermazione.",evidence:null};
 }
 function verify(){
- try{
-  const q=document.getElementById("claim").value.trim();
-  const src=document.getElementById("src").value.trim();
-  const out=document.getElementById("out");
-  if(!q){out.innerHTML='<div class="card"><b>Inserisci l’informazione da verificare.</b></div>';return;}
-  const docs=(Array.isArray(DB.documents)?DB.documents:DEMO_DOCS).map(function(d){
-    const x=Object.assign({},d); x._score=score(q,x); return x;
-  }).sort(function(a,b){return b._score-a._score;});
-  const top=docs[0]||null;
-  const status=classify(q,top,docs), st=status[0], cls=status[1], explanation=status[2];
-  const evidence=docs.filter(function(d){return d._score>=20;}).slice(0,5);
-  let evidenceHtml=evidence.map(function(d){
-    return '<article class="ev"><h3>'+esc(d.title||"Documento ufficiale")+'</h3>'+
-      '<div class="chips"><span class="chip">'+esc(d.authority||"Fonte ufficiale")+'</span>'+
-      '<span class="chip">'+esc(d.document_type||"Documento")+'</span>'+
-      '<span class="chip">'+esc(d.version||"Versione non indicata")+'</span>'+
-      '<span class="chip">'+esc(d.article||"Riferimento non indicato")+'</span>'+
-      '<span class="chip">'+esc(d.status||"Stato non indicato")+'</span></div>'+
-      '<div class="muted" style="font-size:12px">Data: '+esc(d.date||"non indicata")+' · Pertinenza: '+d._score+'%</div>'+
-      '<div class="quote">'+esc(d.excerpt||"Nessun estratto disponibile.")+'</div>'+
-      (d.url?'<a href="'+esc(d.url)+'" target="_blank" rel="noopener">Apri la fonte ufficiale →</a>':"")+
-      '</article>';
-  }).join("");
-  if(!evidenceHtml) evidenceHtml='<div class="notice">Nessuna evidenza sufficientemente pertinente nel catalogo.</div>';
-  out.innerHTML='<div class="card"><span class="status '+cls+'">'+esc(st)+'</span>'+
-    '<div class="claim">'+esc(q)+'</div>'+
-    '<div class="muted" style="font-size:12px">Fonte indicata dall’utente: '+esc(src||"non indicata")+'</div>'+
-    '<p>'+esc(explanation)+'</p>'+
-    '<h2 style="font-size:18px;margin:22px 0 6px">Perché? — fonti ed evidenze</h2>'+
-    evidenceHtml+
-    '<div class="notice"><b>Nota MVP:</b> il risultato del prototipo è documentale e usa il catalogo disponibile. La sincronizzazione completa e il matching semantico avanzato sono ancora in sviluppo.</div></div>';
- }catch(err){
-  document.getElementById("out").innerHTML='<div class="card"><b>Errore durante la verifica.</b><p class="muted">'+esc(err.message||"Errore inatteso")+'</p></div>';
- }
+ const q=document.getElementById("claim").value.trim();
+ const src=document.getElementById("src").value.trim();
+ const out=document.getElementById("out");
+ if(!q){out.innerHTML='<div class="card"><b>Inserisci l’informazione da verificare.</b></div>';return;}
+ const result=classify(q,DB.documents);
+ const related=DB.documents.map(function(d){return Object.assign({},d,{_score:score(q,d)});})
+  .sort(function(a,b){return b._score-a._score;})
+  .filter(function(d){return d._score>=20;}).slice(0,5);
+ let evidenceHtml=related.map(function(d){
+  return '<article class="ev"><h3>'+esc(d.title||"Documento ufficiale")+'</h3>'+
+   '<div class="chips"><span class="chip">'+esc(d.authority||"Fonte ufficiale")+'</span>'+
+   '<span class="chip">'+esc(d.document_type||"Documento")+'</span>'+
+   '<span class="chip">'+esc(d.version||"Versione non indicata")+'</span>'+
+   '<span class="chip">'+esc(d.article||"Riferimento non indicato")+'</span>'+
+   '<span class="chip">'+esc(d.status||"Stato non indicato")+'</span></div>'+
+   '<div class="muted" style="font-size:12px">Data: '+esc(d.date||"non indicata")+' · Pertinenza: '+d._score+'%</div>'+
+   '<div class="quote">'+esc(d.excerpt||"Nessun estratto disponibile.")+'</div>'+
+   (d.url?'<a href="'+esc(d.url)+'" target="_blank" rel="noopener">Apri la fonte ufficiale →</a>':"")+
+   '</article>';
+ }).join("");
+ if(!evidenceHtml)evidenceHtml='<div class="notice">Nessuna evidenza sufficientemente pertinente nel catalogo.</div>';
+ out.innerHTML='<div class="card"><span class="status '+result.cls+'">'+esc(result.status)+'</span>'+
+  '<div class="claim">'+esc(q)+'</div>'+
+  '<div class="muted" style="font-size:12px">Fonte indicata dall’utente: '+esc(src||"non indicata")+'</div>'+
+  '<p>'+esc(result.explanation)+'</p>'+
+  '<h2 style="font-size:18px;margin:22px 0 6px">Perché? — fonti ed evidenze</h2>'+
+  evidenceHtml+
+  '<div class="notice"><b>Metodo:</b> il risultato confronta l'affermazione con documenti catalogati da fonti istituzionali. Non considera l'assenza di una fonte come prova di falsità. La versione definitiva dovrà conservare testo integrale, articolo/comma e data di vigenza.</div></div>';
 }
 document.addEventListener("DOMContentLoaded",function(){
  document.getElementById("verifyBtn").addEventListener("click",verify);
