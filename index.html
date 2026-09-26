@@ -219,7 +219,12 @@ async function notebookAsk(){
    return x;
  }).sort(function(a,b){return b._score-a._score;}).slice(0,50);
  var status=document.getElementById("nbLoading");
- try{ranked=await semanticRank(q,ranked,status);}catch(e){}
+ try{
+   ranked=await Promise.race([
+     semanticRank(q,ranked,status),
+     new Promise(function(resolve){setTimeout(function(){resolve(ranked);},20000);})
+   ]);
+ }catch(e){}
  var usable=ranked.filter(function(d){return (d.semantic!=null?d.semantic>=0.42:d._score>=20);}).slice(0,5);
  if(!usable.length){
    status.innerHTML="<b>Nessuna evidenza sufficiente nel quaderno.</b><br>Non posso ricavare una risposta documentale dalle fonti selezionate. L’assenza di una fonte non viene interpretata come prova di falsità.";
@@ -471,6 +476,9 @@ function attachTimestamps(text){
 function sample(){
  document.getElementById("src").value="https://www.senato.it/export/ddl/full/60464?leg=19";
  document.getElementById("claim").value="Il decreto-legge 17 settembre 2026, n. 162 è già stato convertito definitivamente in legge.";
+ document.getElementById("contentDate").value="";
+ detectContentDate();
+ verify();
 }
 function cleanSubtitleText(text){
  window.transcriptSegments=parseSubtitleSegments(text);
@@ -617,7 +625,7 @@ async function verify(){
  var out=document.getElementById("out");
  if(!q){out.innerHTML='<div class="card"><b>Inserisci l’informazione da confrontare.</b></div>';return;}
 
- out.innerHTML='<div class="card"><div class="semantic-status" id="analysisStatus"><span class="semantic-dot"></span>Analisi documentale e temporale in corso…</div></div>';
+ out.innerHTML='<div class="card"><div class="semantic-status" id="analysisStatus"><span class="semantic-dot"></span>Ricerca nelle fonti ufficiali…</div></div>';
 
  var candidates=DOCS.map(function(d){
    var x=Object.assign({},d);
@@ -627,7 +635,17 @@ async function verify(){
  }).sort(function(a,b){return b._score-a._score;}).slice(0,80);
 
  var statusEl=document.getElementById("analysisStatus");
- candidates=await semanticRank(q,candidates,statusEl);
+ var lexicalCandidates=candidates.slice();
+ candidates=lexicalCandidates;
+ try{
+   candidates=await Promise.race([
+     semanticRank(q,lexicalCandidates,statusEl),
+     new Promise(function(resolve){setTimeout(function(){resolve(lexicalCandidates);},20000);})
+   ]);
+ }catch(e){
+   candidates=lexicalCandidates;
+   statusEl.innerHTML='<span class="semantic-dot"></span>Ricerca semantica non disponibile in questo momento; continuo con le fonti catalogate.';
+ }
 
  var low=q.toLowerCase();
  var has162=/\b162\b/.test(low);
