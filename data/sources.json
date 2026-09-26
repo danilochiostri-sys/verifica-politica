@@ -1,0 +1,11 @@
+{
+  "updated_at":"2026-09-26T00:00:00+00:00",
+  "sources":[
+    {"id":"normattiva","name":"Normattiva / dati.normattiva.it","type":"normativa","url":"https://dati.normattiva.it/","coverage":"Atti normativi, versioni e multivigenza","connected":true},
+    {"id":"senato","name":"Dati Senato","type":"parlamento","url":"https://dati.senato.it/sito/scarica_i_dati","coverage":"Disegni di legge, iter, documenti e RSS","connected":true},
+    {"id":"camera","name":"Open Data Camera","type":"parlamento","url":"https://dati.camera.it/","coverage":"Atti parlamentari e linked open data","connected":true},
+    {"id":"gazzetta","name":"Gazzetta Ufficiale","type":"pubblicazione","url":"https://www.gazzettaufficiale.it/","coverage":"Pubblicazione ufficiale degli atti","connected":true},
+    {"id":"ministeri","name":"Siti e feed dei Ministeri","type":"governo","url":"https://www.gov.it/","coverage":"Documenti e comunicazioni pubblicati dai siti istituzionali","connected":true}
+  ],
+  "documents":[]
+}
