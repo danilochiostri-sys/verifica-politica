@@ -1,4 +1,4 @@
-import json,re,hashlib,urllib.request,urllib.parse,html as htmllib,urllib.parse,datetime,html as htmllib
+import json,re,hashlib,urllib.request,urllib.parse,datetime,html as htmllib
 from pathlib import Path
 import xml.etree.ElementTree as ET
 ROOT=Path(__file__).resolve().parents[1]; OUT=ROOT/"data"/"sources.json"; OUT.parent.mkdir(parents=True,exist_ok=True)
@@ -18,22 +18,22 @@ def normattiva_urn(d):
     title=str(d.get("title") or "")
     typ=str(d.get("document_type") or "").upper()
     date=str(d.get("date") or "")
-    m=re.search(r"\\bn\\.?\\s*(\\d+)\\b",title,re.I)
-    if not m or not re.match(r"^20\\d{2}-\\d{2}-\\d{2}$",date): return None
+    m=re.search(r"\bn\.?\s*(\d+)\b",title,re.I)
+    if not m or not re.match(r"^20\d{2}-\d{2}-\d{2}$",date): return None
     num=m.group(1)
     slug="decreto.legge" if "DECRETO-LEGGE" in typ else ("legge" if typ=="LEGGE" else None)
     if not slug:return None
     return f"urn:nir:stato:{slug}:{date};{num}@originale"
 def html_to_text(src):
-    s=re.sub(r"<script[\\s\\S]*?</script>"," ",src,flags=re.I)
-    s=re.sub(r"<style[\\s\\S]*?</style>"," ",s,flags=re.I)
-    s=re.sub(r"<br\\s*/?>","\\n",s,flags=re.I)
-    s=re.sub(r"</(div|p|li|h1|h2|h3|h4|tr)>","\\n",s,flags=re.I)
+    s=re.sub(r"<script[\s\S]*?</script>"," ",src,flags=re.I)
+    s=re.sub(r"<style[\s\S]*?</style>"," ",s,flags=re.I)
+    s=re.sub(r"<br\s*/?>","\n",s,flags=re.I)
+    s=re.sub(r"</(div|p|li|h1|h2|h3|h4|tr)>","\n",s,flags=re.I)
     s=re.sub(r"<[^>]+>"," ",s)
     s=htmllib.unescape(s)
-    s=re.sub(r"[ \\t]+"," ",s)
-    s=re.sub(r"\\n[ \\t]+","\\n",s)
-    s=re.sub(r"\\n{3,}","\\n\\n",s)
+    s=re.sub(r"[ \t]+"," ",s)
+    s=re.sub(r"\n[ \t]+","\n",s)
+    s=re.sub(r"\n{3,}","\n\n",s)
     return s.strip()
 def extract_article_sections(html):
     s=html
