@@ -8,6 +8,78 @@ def fetch(url,method="GET",body=None,timeout=45):
     if body is not None: data=json.dumps(body).encode(); h["Content-Type"]="application/json"
     with urllib.request.urlopen(urllib.request.Request(url,data=data,headers=h,method=method),timeout=timeout) as r:return r.read()
 def add(a,**d): d["source_kind"]="official"; a.append(d)
+FULLTEXT_DIR=ROOT/"data"/"fulltext"
+FULLTEXT_DIR.mkdir(parents=True,exist_ok=True)
+FULLTEXT_LIMIT=80
+def safe_name(s):
+    s=re.sub(r"[^a-zA-Z0-9._-]+","-",str(s or "")).strip("-").lower()
+    return s[:110] or "documento"
+def normattiva_urn(d):
+    title=str(d.get("title") or "")
+    typ=str(d.get("document_type") or "").upper()
+    date=str(d.get("date") or "")
+    m=re.search(r"\\bn\\.?\\s*(\\d+)\\b",title,re.I)
+    if not m or not re.match(r"^20\\d{2}-\\d{2}-\\d{2}$",date): return None
+    num=m.group(1)
+    slug="decreto.legge" if "DECRETO-LEGGE" in typ else ("legge" if typ=="LEGGE" else None)
+    if not slug:return None
+    return f"urn:nir:stato:{slug}:{date};{num}@originale"
+def html_to_text(src):
+    s=re.sub(r"<script[\\s\\S]*?</script>"," ",src,flags=re.I)
+    s=re.sub(r"<style[\\s\\S]*?</style>"," ",s,flags=re.I)
+    s=re.sub(r"<br\\s*/?>","\\n",s,flags=re.I)
+    s=re.sub(r"</(div|p|li|h1|h2|h3|h4|tr)>","\\n",s,flags=re.I)
+    s=re.sub(r"<[^>]+>"," ",s)
+    s=htmllib.unescape(s)
+    s=re.sub(r"[ \\t]+"," ",s)
+    s=re.sub(r"\\n[ \\t]+","\\n",s)
+    s=re.sub(r"\\n{3,}","\\n\\n",s)
+    return s.strip()
+def extract_article_sections(html):
+    s=html
+    pattern=re.compile(r'<h2[^>]*class="[^"]*article-num-akn[^"]*"[^>]*>(.*?)</h2>',re.I|re.S)
+    hits=list(pattern.finditer(s)); sections=[]
+    for i,m in enumerate(hits):
+        chunk=s[m.start():(hits[i+1].start() if i+1<len(hits) else len(s))]
+        heading=html_to_text(m.group(1)).replace("  "," ").strip()
+        body=html_to_text(chunk)
+        if heading and body:
+            sections.append({"article":heading,"text":body})
+    return sections
+def enrich_fulltext(d, limit_counter):
+    if limit_counter[0] >= FULLTEXT_LIMIT:return False
+    urn=normattiva_urn(d)
+    if not urn:return False
+    url="https://www.normattiva.it/uri-res/N2Ls?"+urllib.parse.urlencode({"urn":urn})
+    try:
+        raw=fetch(url,timeout=30).decode("utf-8","ignore")
+        sections=extract_article_sections(raw)
+        text=html_to_text(raw)
+        if len(text)<250:return False
+        key=d.get("reference_code") or safe_name(d.get("title"))
+        path=FULLTEXT_DIR/(safe_name("normattiva-"+key)+".json")
+        payload={
+            "source":"Normattiva",
+            "source_url":url,
+            "retrieved_at":datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "title":d.get("title"),
+            "reference_code":d.get("reference_code"),
+            "version":d.get("version"),
+            "text_hash":hashlib.sha256(text.encode("utf-8")).hexdigest(),
+            "text":text,
+            "sections":sections
+        }
+        path.write_text(json.dumps(payload,ensure_ascii=False,separators=(",",":")),encoding="utf-8")
+        d["fulltext_path"]=str(path.relative_to(ROOT)).replace("\\\\","/")
+        d["fulltext_url"]=url
+        d["fulltext_available"]=True
+        d["fulltext_hash"]=payload["text_hash"]
+        limit_counter[0]+=1
+        return True
+    except Exception as e:
+        print("Fulltext",d.get("title"),e)
+        return False
+
 def normattiva():
     out=[]; base="https://api.normattiva.it/t/normattiva.api/bff-opendata/v1/api/v1"
     for term in ("DECRETO-LEGGE","LEGGE"):
@@ -56,6 +128,18 @@ def main():
       k=(d.get("title",""),d.get("authority",""),d.get("url",""))
       if d.get("title") and k not in seen: seen.add(k); clean.append(d)
     now=datetime.datetime.now(datetime.timezone.utc).isoformat()
+    candidates=list(clean)
+    curated=ROOT/"data"/"curated.json"
+    if curated.exists():
+      try:
+        cj=json.loads(curated.read_text(encoding="utf-8"))
+        candidates += cj.get("records") or []
+      except Exception as e: print("Curated",e)
+    counter=[0]
+    # Priorità agli atti normativi più recenti e ai record curati.
+    targets=sorted({id(d):d for d in candidates if d.get("source_kind")=="official"}.values(), key=lambda d:str(d.get("date") or ""), reverse=True)
+    for d in targets:
+      enrich_fulltext(d,counter)
     for d in clean:
       basis="|".join(str(d.get(k,"") or "") for k in ("title","authority","document_type","date","version","article","status","url","excerpt","reference_code"))
       d["record_fingerprint"]=hashlib.sha256(basis.encode("utf-8")).hexdigest()[:16]
