@@ -17,6 +17,8 @@ main{max-width:1080px;margin:auto;padding:34px 20px 64px}.ey{font-size:13px;font
 .toolbar{display:flex;justify-content:space-between;gap:10px;align-items:center;margin:18px 0 8px;flex-wrap:wrap}.sources{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.source{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px}.source strong{display:block;font-size:13px}.source span{display:block;color:var(--muted);font-size:11px;margin-top:5px}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#12b76a;margin-right:5px}
 .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}.step{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px}.step b{display:block;margin-bottom:5px}.step span{color:var(--muted);font-size:12px;line-height:1.45}
 @media(max-width:800px){.grid,.sources,.steps{grid-template-columns:1fr}h1{font-size:34px}}
+
+.ingest{margin-top:16px;padding:16px;border:1px dashed #cfd6e2;border-radius:16px;background:#fbfcfe}.ingest-title{font-weight:800;margin-bottom:6px}.ingest-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.file-name{font-size:12px;color:var(--muted)}.progress{display:none;margin-top:10px;height:9px;border-radius:99px;background:#e8ecf3;overflow:hidden}.progress-bar{height:100%;width:0;background:var(--blue);transition:width .25s}.transcript-box{display:none;margin-top:12px}.transcript-box textarea{min-height:160px}.source-note{margin-top:9px;font-size:12px;color:var(--muted);line-height:1.45}
 </style>
 <script src="data/catalog.js" onerror="window.VP_CATALOG=null"></script></head>
 <body>
@@ -60,13 +62,9 @@ main{max-width:1080px;margin:auto;padding:34px 20px 64px}.ey{font-size:13px;font
 </main>
 
 <script>
-var FALLBACK_DOCS={title:"DECRETO-LEGGE 17 settembre 2026, n. 162",authority:"Gazzetta Ufficiale",document_type:"Decreto-legge",date:"17/09/2026",version:"Testo originario",article:"Atto completo",status:"In vigore dal 18/09/2026",reference_code:"26G00181",url:"https://www.gazzettaufficiale.it/eli/id/2026/09/17/26G00181/sg",excerpt:"Disposizioni urgenti per il sostegno economico e il contenimento degli effetti derivanti dal perdurante aumento del costo dei carburanti, nonché in materia fiscale.",keywords:["decreto-legge","162","2026","17 settembre","carburanti","fiscale"]},
- {title:"Atto Camera n. 3106 — Conversione in legge del D.L. 17 settembre 2026, n. 162",authority:"Senato della Repubblica",document_type:"Iter parlamentare",date:"18/09/2026",version:"Situazione dell'iter",article:"Lavori preparatori",status:"Assegnato alla Camera; esame non ancora iniziato",reference_code:"C.3106",url:"https://www.senato.it/export/ddl/full/60464?leg=19",excerpt:"Conversione in legge del decreto-legge 17 settembre 2026, n. 162. 18 settembre 2026: assegnato (non ancora iniziato l'esame).",keywords:["162","2026","conversione","convertito","convertita","definitivamente","legge","C.3106","assegnato","esame non ancora iniziato"]},
- {title:"D.L. 162/2026 — elenco decreti-legge in corso di conversione",authority:"Senato della Repubblica",document_type:"Elenco ufficiale",date:"25/09/2026",version:"Pagina istituzionale",article:"Elenco decreti-legge",status:"In corso di conversione",reference_code:"D.L. 162/2026",url:"https://www.senato.it/leg/ldl_new/v3/sldlelencodlconvers.htm",excerpt:"Il D.L. 17 settembre 2026, n. 162 è elencato tra i decreti-legge in corso di conversione.",keywords:["162","in corso di conversione","conversione","assegnato"]},
- {title:"DECRETO-LEGGE 26 giugno 2026, n. 107",authority:"Gazzetta Ufficiale",document_type:"Decreto-legge",date:"26/06/2026",version:"Testo originario / stato successivo",article:"Atto completo",status:"Convertito con modificazioni dalla legge 7 agosto 2026, n. 152",reference_code:"26G00132",url:"https://www.gazzettaufficiale.it/eli/id/2026/06/26/26G00132/sg",excerpt:"Il decreto risulta convertito con modificazioni dalla legge 7 agosto 2026, n. 152.",keywords:["107","2026","convertito","legge","152","conversione"]},
- {title:"DECRETO-LEGGE 7 maggio 2026, n. 66",authority:"Gazzetta Ufficiale",document_type:"Decreto-legge",date:"07/05/2026",version:"Testo originario / stato successivo",article:"Atto completo",status:"Convertito con modificazioni dalla legge 2 luglio 2026, n. 116",reference_code:"26G00090",url:"https://www.gazzettaufficiale.it/eli/id/2026/05/07/26G00090/sg",excerpt:"Il decreto è stato convertito con modificazioni dalla legge 2 luglio 2026, n. 116.",keywords:["66","2026","convertito","legge","116","conversione"]}
-];;
-var DOCS=(window.VP_CATALOG&&Array.isArray(window.VP_CATALOG.documents)&&window.VP_CATALOG.documents.length)?window.VP_CATALOG.documents:FALLBACK_DOCS;
+var DOCS=[];
+var selectedFile=null;
+var transcriber=null;
 
 function esc(v){return String(v==null?"":v).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c];});}
 function words(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").split(/\s+/).filter(function(x){return x.length>1;});}
@@ -80,20 +78,114 @@ function sample(){
  document.getElementById("src").value="https://www.senato.it/export/ddl/full/60464?leg=19";
  document.getElementById("claim").value="Il decreto-legge 17 settembre 2026, n. 162 è già stato convertito definitivamente in legge.";
 }
-function verify(){
- var q=document.getElementById("claim").value.trim(), src=document.getElementById("src").value.trim(), out=document.getElementById("out");
- if(!q){out.innerHTML='<div class="card"><b>Inserisci l’informazione da verificare.</b></div>';return;}
+function cleanSubtitleText(text){
+ return String(text||"").replace(/\r/g,"")
+ .replace(/^WEBVTT.*$/gim,"")
+ .replace(/^NOTE.*$/gim,"")
+ .replace(/^\d+$\n/gm,"")
+ .replace(/\d{1,2}:\d{2}(?::\d{2})?[.,]\d{3}\s+-->\s+.*$/gm,"")
+ .replace(/<[^>]+>/g," ")
+ .replace(/\n{2,}/g,"\n").trim();
+}
+async function handleLocalFile(e){
+ selectedFile=e.target.files&&e.target.files[0]?e.target.files[0]:null;
+ var name=document.getElementById("fileName"), btn=document.getElementById("transcribeBtn"), status=document.getElementById("transcribeStatus");
+ if(!selectedFile){name.textContent="Nessun file selezionato";btn.style.display="none";return;}
+ name.textContent=selectedFile.name+" · "+Math.round(selectedFile.size/1024)+" KB";
+ status.textContent="";
+ var ext=(selectedFile.name.split(".").pop()||"").toLowerCase();
+ if(["txt","srt","vtt"].indexOf(ext)>=0){
+   var text=await selectedFile.text();
+   text=ext==="txt"?text:cleanSubtitleText(text);
+   document.getElementById("transcriptText").value=text;
+   document.getElementById("claim").value=text;
+   document.getElementById("transcriptBox").style.display="block";
+   btn.style.display="none";
+   status.textContent="Testo acquisito localmente. Puoi correggerlo e verificare.";
+ }else{
+   document.getElementById("transcriptBox").style.display="none";
+   btn.style.display="inline-block";
+   status.textContent="File multimediale pronto. Premi “Trascrivi nel browser”.";
+ }
+}
+function copyTranscriptToClaim(){document.getElementById("claim").value=document.getElementById("transcriptText").value.trim();}
+function setProgress(p,msg){
+ document.getElementById("transcribeProgress").style.display="block";
+ document.getElementById("transcribeBar").style.width=Math.max(0,Math.min(100,p))+"%";
+ document.getElementById("transcribeStatus").textContent=msg||"";
+}
+async function videoToAudioBlob(file){
+ return await new Promise(function(resolve,reject){
+   var video=document.createElement("video"); video.muted=true; video.playsInline=true; video.src=URL.createObjectURL(file);
+   var ctx=new (window.AudioContext||window.webkitAudioContext)();
+   var source=ctx.createMediaElementSource(video), dest=ctx.createMediaStreamDestination();
+   source.connect(dest);
+   var mime="audio/webm";
+   if(window.MediaRecorder&&MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) mime="audio/webm;codecs=opus";
+   var rec=new MediaRecorder(dest.stream,{mimeType:mime}), chunks=[];
+   rec.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data);};
+   rec.onerror=function(e){reject(e.error||new Error("Impossibile acquisire l'audio del video."));};
+   rec.onstop=function(){URL.revokeObjectURL(video.src);ctx.close();resolve(new Blob(chunks,{type:mime}));};
+   video.onloadedmetadata=function(){
+     if(!isFinite(video.duration)||video.duration<=0){reject(new Error("Durata video non disponibile."));return;}
+     rec.start(1000);
+     setProgress(5,"Estrazione audio dal video…");
+     video.play().catch(reject);
+   };
+   video.ontimeupdate=function(){
+     if(video.duration) setProgress(5+Math.round(video.currentTime/video.duration*45),"Estrazione audio dal video…");
+   };
+   video.onended=function(){if(rec.state!=="inactive")rec.stop();};
+   video.onerror=function(){reject(new Error("Formato video non supportato dal browser."));};
+ });
+}
+async function transcribeSelected(){
+ if(!selectedFile)return;
+ var btn=document.getElementById("transcribeBtn");
+ btn.disabled=true; setProgress(2,"Preparazione trascrizione locale…");
+ try{
+   var audioFile=selectedFile, ext=(selectedFile.name.split(".").pop()||"").toLowerCase();
+   if(["mp4","webm","mov","m4v","ogv"].indexOf(ext)>=0){audioFile=await videoToAudioBlob(selectedFile);}
+   setProgress(50,"Caricamento del motore Whisper nel browser…");
+   if(!transcriber){
+     var mod=await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1");
+     var device=("gpu" in navigator)&&navigator.gpu?"webgpu":"wasm";
+     try{transcriber=await mod.pipeline("automatic-speech-recognition","onnx-community/whisper-tiny",{device:device});}
+     catch(first){transcriber=await mod.pipeline("automatic-speech-recognition","onnx-community/whisper-tiny",{device:"wasm"});}
+   }
+   setProgress(65,"Trascrizione in corso…");
+   var url=URL.createObjectURL(audioFile);
+   var result=await transcriber(url,{return_timestamps:true,chunk_length_s:30,stride_length_s:5,language:"italian",task:"transcribe"});
+   URL.revokeObjectURL(url);
+   var text=result.text||"";
+   document.getElementById("transcriptText").value=text.trim();
+   document.getElementById("claim").value=text.trim();
+   document.getElementById("transcriptBox").style.display="block";
+   setProgress(100,"Trascrizione completata. Il testo resta sul dispositivo.");
+ }catch(err){
+   setProgress(0,"Trascrizione non disponibile: "+(err&&err.message?err.message:"errore inatteso")+". Puoi caricare una trascrizione/SRT/VTT.");
+ }finally{btn.disabled=false;}
+}
+function classify(q,docs){
  var low=q.toLowerCase(), has162=/\b162\b/.test(low), conversion=/convertit|definitiv|legge di conversione/.test(low);
- var docs=DOCS.map(function(d){var x=Object.assign({},d);x._score=score(q,d);return x;}).sort(function(a,b){return b._score-a._score;});
- var pending=docs.filter(function(d){var h=[d.title,d.status,d.excerpt,d.reference_code].join(" ").toLowerCase();return has162&&/162/.test(h)&&/in corso|assegnato|non ancora iniziat/.test(h);});
- var status="NON VERIFICABILE", cls="warn", explanation="Nel catalogo disponibile non c'è evidenza sufficiente per confermare o smentire l'affermazione.";
- if(has162&&conversion&&pending.length){status="CONTRADDETTA";cls="bad";explanation="Le fonti istituzionali catalogate indicano che, alla data delle fonti utilizzate, l'iter di conversione del D.L. 162/2026 era ancora in corso.";}
- else if(docs[0]&&docs[0]._score>=45){status="SUPPORTATA DALLA FONTE";cls="ok";explanation="Il catalogo contiene un documento istituzionale con elementi coerenti con l'affermazione. Verificare sempre la data e la versione dell'atto.";}
- var related=docs.filter(function(d){return d._score>=25;}).slice(0,5);
+ var pending=(docs||[]).filter(function(d){
+   var hay=[d.title,d.status,d.excerpt,d.reference_code,(d.keywords||[]).join(" ")].join(" ").toLowerCase();
+   return has162&&/162/.test(hay)&&/in corso|assegnato|non ancora iniziat/.test(hay);
+ });
+ if(has162&&conversion&&pending.length)return ["CONTRADDETTA","bad","Le fonti istituzionali catalogate indicano che, alla data delle fonti utilizzate, l'iter di conversione del D.L. 162/2026 era ancora in corso."];
+ var ranked=(docs||[]).map(function(d){var x=Object.assign({},d);x._score=score(q,d);return x;}).sort(function(a,b){return b._score-a._score;});
+ if(ranked[0]&&ranked[0]._score>=45)return ["SUPPORTATA DALLA FONTE","ok","Sono presenti elementi documentali compatibili con l'affermazione. La verifica dipende dalla data e dalla versione della fonte."];
+ return ["NON VERIFICABILE","warn","Il catalogo disponibile non contiene evidenza sufficiente per confermare o smentire con affidabilità l'affermazione."];
+}
+function verify(){
+ var q=document.getElementById("claim").value.trim(),src=document.getElementById("src").value.trim(),out=document.getElementById("out");
+ if(!q){out.innerHTML='<div class="card"><b>Inserisci l’informazione da verificare.</b></div>';return;}
+ var result=classify(q,DOCS), ranked=DOCS.map(function(d){var x=Object.assign({},d);x._score=score(q,d);return x;}).sort(function(a,b){return b._score-a._score;});
+ var related=ranked.filter(function(d){return d._score>=25;}).slice(0,5);
  var evidence=related.map(function(d){
   return '<article class="ev"><h3>'+esc(d.title)+'</h3><div class="chips"><span class="chip">'+esc(d.authority)+'</span><span class="chip">'+esc(d.document_type)+'</span><span class="chip">'+esc(d.version)+'</span><span class="chip">'+esc(d.article||"Riferimento non indicato")+'</span><span class="chip">'+esc(d.status)+'</span></div><div class="muted" style="font-size:12px">Data: '+esc(d.date)+' · Pertinenza: '+d._score+'%</div><div class="quote">'+esc(d.excerpt)+'</div><a href="'+esc(d.url)+'" target="_blank" rel="noopener">Apri la fonte ufficiale →</a></article>';
  }).join("");
- out.innerHTML='<div class="card"><span class="status '+cls+'">'+status+'</span><div class="claim">'+esc(q)+'</div><div class="muted" style="font-size:12px">Fonte indicata dall’utente: '+esc(src||"non indicata")+'</div><p>'+explanation+'</p><h2 style="font-size:18px;margin:22px 0 6px">Perché? — fonti ed evidenze</h2>'+(evidence||'<div class="notice">Nessuna evidenza sufficientemente pertinente.</div>')+'<div class="notice"><b>Nota:</b> questa versione del sito usa un catalogo curato di evidenze istituzionali per rendere il test affidabile. La sincronizzazione completa automatica dei documenti resta il prossimo livello del progetto.</div></div>';
+ out.innerHTML='<div class="card"><span class="status '+result[1]+'">'+result[0]+'</span><div class="claim">'+esc(q)+'</div><div class="muted" style="font-size:12px">Fonte indicata dall’utente: '+esc(src||"non indicata")+'</div><p>'+result[2]+'</p><h2 style="font-size:18px;margin:22px 0 6px">Perché? — fonti ed evidenze</h2>'+(evidence||'<div class="notice">Nessuna evidenza sufficientemente pertinente.</div>')+'<div class="notice"><b>Metodo:</b> questa versione usa un catalogo documentale e regole di confronto. La fase successiva introdurrà l’estrazione semantica delle singole affermazioni dal transcript.</div></div>';
 }
 </script>
 </body>
