@@ -20,7 +20,7 @@ main{max-width:1080px;margin:auto;padding:34px 20px 64px}.ey{font-size:13px;font
 
 .ingest{margin-top:16px;padding:16px;border:1px dashed #cfd6e2;border-radius:16px;background:#fbfcfe}.ingest-title{font-weight:800;margin-bottom:6px}.ingest-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.file-name{font-size:12px;color:var(--muted)}.progress{display:none;margin-top:10px;height:9px;border-radius:99px;background:#e8ecf3;overflow:hidden}.progress-bar{height:100%;width:0;background:var(--blue);transition:width .25s}.transcript-box{display:none;margin-top:12px}.transcript-box textarea{min-height:160px}.source-note{margin-top:9px;font-size:12px;color:var(--muted);line-height:1.45}
  .claims-panel{display:none;margin-top:16px}.claim-item{border:1px solid var(--line);border-radius:14px;padding:13px;margin-top:10px;background:#fff}.claim-item .kind{font-size:11px;font-weight:800;text-transform:uppercase;color:var(--muted)}.claim-item button{margin-top:9px;padding:8px 12px;font-size:12px}.comparison{margin-top:16px}.relation{font-weight:800;font-size:15px}.comparison-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}.comparison-side{border:1px solid var(--line);border-radius:14px;padding:15px;background:#fff}.comparison-side h3{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 8px}.comparison-side p{margin:0;line-height:1.55}.meta-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}.meta-box{padding:10px 11px;border-radius:10px;background:#f8fafc}.meta-box b{display:block;font-size:11px;color:var(--muted);text-transform:uppercase}.meta-box span{display:block;margin-top:3px;font-size:13px}.method-note{margin-top:14px}@media(max-width:760px){.comparison-grid,.meta-grid{grid-template-columns:1fr}}
-</style>
+.semantic-status{margin-top:10px;font-size:12px;color:var(--muted);padding:10px 12px;background:#f8fafc;border-radius:10px}.semantic-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#1d4ed8;margin-right:6px}.comparison-side .mini{font-size:12px;color:var(--muted);margin-top:8px}.analysis-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}.analysis-table th,.analysis-table td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.analysis-table th{font-size:11px;text-transform:uppercase;color:var(--muted)}</style>
 <script src="data/catalog.js" onerror="window.VP_CATALOG=null"></script></head>
 <body>
 <header><div class="logo">VP</div><div class="brand"><strong>Verifica Politica</strong><small>Verifica documentale di informazioni politiche</small></div></header>
@@ -114,6 +114,68 @@ function score(q,d){
  qwords.forEach(function(w){if(hay.indexOf(w)>=0)hit++;});
  if(/\b162\b/.test(q)&&/\b162\b/.test(hay))hit+=4;
  return Math.round(hit/Math.max(1,qwords.length)*100);
+}
+
+var semanticPipeline=null;
+var semanticLoading=null;
+var semanticCache=new Map();
+
+async function getSemanticPipeline(statusEl){
+ if(semanticPipeline)return semanticPipeline;
+ if(semanticLoading)return semanticLoading;
+ semanticLoading=(async function(){
+   if(statusEl)statusEl.innerHTML='<span class="semantic-dot"></span>Caricamento dell\'analisi semantica nel browser… Prima esecuzione: il modello viene scaricato e poi rimane in cache.';
+   var mod=await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.3.0");
+   var device=(navigator.gpu?"webgpu":"wasm");
+   try{
+     semanticPipeline=await mod.pipeline("feature-extraction","Xenova/multilingual-e5-small",{device:device});
+   }catch(e){
+     semanticPipeline=await mod.pipeline("feature-extraction","Xenova/multilingual-e5-small",{device:"wasm"});
+   }
+   return semanticPipeline;
+ })();
+ try{return await semanticLoading;}finally{semanticLoading=null;}
+}
+
+function cosine(a,b){
+ var dot=0,na=0,nb=0;
+ for(var i=0;i<a.length;i++){dot+=a[i]*b[i];na+=a[i]*a[i];nb+=b[i]*b[i];}
+ return dot/(Math.sqrt(na)*Math.sqrt(nb)||1);
+}
+function tensorRows(x){
+ if(x&&typeof x.tolist==="function")return x.tolist();
+ if(Array.isArray(x))return x;
+ if(x&&x.data&&x.dims){
+   var rows=x.dims.length>1?x.dims[x.dims.length-2]:1, cols=x.dims.length?x.dims[x.dims.length-1]:x.data.length;
+   var out=[]; for(var i=0;i<rows;i++)out.push(Array.from(x.data.slice(i*cols,(i+1)*cols))); return out;
+ }
+ return [];
+}
+async function semanticRank(query,candidates,statusEl){
+ if(!candidates.length)return candidates;
+ try{
+   var pipe=await getSemanticPipeline(statusEl);
+   if(statusEl)statusEl.innerHTML='<span class="semantic-dot"></span>Confronto semantico in corso…';
+   var qOut=await pipe("query: "+query,{pooling:"mean",normalize:true});
+   var qVec=tensorRows(qOut)[0];
+   var missing=candidates.filter(function(d){return !semanticCache.has(d.__key);});
+   if(missing.length){
+     var texts=missing.map(function(d){return "passage: "+[d.title,d.document_type,d.article,d.excerpt,d.status].filter(Boolean).join(". ");});
+     var out=await pipe(texts,{pooling:"mean",normalize:true});
+     var rows=tensorRows(out);
+     missing.forEach(function(d,i){semanticCache.set(d.__key,rows[i]);});
+   }
+   candidates.forEach(function(d){
+     var vec=semanticCache.get(d.__key);
+     d.semantic=vec?cosine(qVec,vec):0;
+   });
+   candidates.sort(function(a,b){return b.semantic-a.semantic;});
+   if(statusEl)statusEl.innerHTML='<span class="semantic-dot"></span>Analisi semantica completata. La pertinenza semantica serve a trovare le fonti pertinenti, non è un giudizio di verità.';
+   return candidates;
+ }catch(err){
+   if(statusEl)statusEl.innerHTML='Analisi semantica non disponibile: uso il confronto testuale come fallback.';
+   return candidates;
+ }
 }
 function sample(){
  document.getElementById("src").value="https://www.senato.it/export/ddl/full/60464?leg=19";
@@ -223,65 +285,55 @@ function findEvidence(q){
    .sort(function(a,b){return b._score-a._score;});
  return ranked.filter(function(d){return d._score>=25;}).slice(0,5);
 }
-function verify(){
+async function verify(){
  var q=document.getElementById("claim").value.trim(),src=document.getElementById("src").value.trim(),out=document.getElementById("out");
  if(!q){out.innerHTML='<div class="card"><b>Inserisci l’informazione da confrontare.</b></div>';return;}
 
- var low=q.toLowerCase();
- var has162=/\b162\b/.test(low);
- var conversion=/convertit|definitiv|legge di conversione/.test(low);
- var evidenceDocs=findEvidence(q);
- var pending=evidenceDocs.filter(function(d){
+ out.innerHTML='<div class="card"><div class="semantic-status" id="analysisStatus"><span class="semantic-dot"></span>Preparazione dell’analisi comparativa…</div></div>';
+
+ var candidates=DOCS.map(function(d){var x=Object.assign({},d);x.__key=[d.title,d.authority,d.reference_code,d.url].join("|");x._score=score(q,d);return x;})
+   .sort(function(a,b){return b._score-a._score;})
+   .slice(0,60);
+
+ var analysisStatus=document.getElementById("analysisStatus");
+ candidates=await semanticRank(q,candidates,analysisStatus);
+
+ var low=q.toLowerCase(), has162=/\b162\b/.test(low), conversion=/convertit|definitiv|legge di conversione/.test(low);
+ var pending=candidates.filter(function(d){
    var hay=[d.title,d.status,d.excerpt,d.reference_code,(d.keywords||[]).join(" ")].join(" ").toLowerCase();
    return has162&&/162/.test(hay)&&/in corso|assegnato|non ancora iniziat/.test(hay);
  });
 
- var relation="EVIDENZA INSUFFICIENTE";
- var relationClass="warn";
- var relationText="Le fonti disponibili non permettono, per ora, un confronto documentale sufficiente. Questo non implica che l'affermazione sia falsa.";
-
+ var relation="EVIDENZA INSUFFICIENTE", relationClass="warn";
+ var relationText="Le fonti disponibili non permettono, per ora, un confronto documentale sufficiente. Questo non implica che l’affermazione sia falsa.";
  if(has162&&conversion&&pending.length){
-   relation="ELEMENTI IN CONTRASTO";
-   relationClass="bad";
-   relationText="L'affermazione descrive una conversione definitiva, mentre i documenti istituzionali disponibili descrivono un iter ancora in corso alla data delle fonti.";
- } else if(evidenceDocs.length){
-   relation="CORRISPONDENZA DOCUMENTALE";
-   relationClass="ok";
-   relationText="È stata individuata almeno una fonte istituzionale che contiene elementi pertinenti al contenuto dell'affermazione. Il documento va letto insieme al testo dichiarato.";
+   relation="ELEMENTI IN CONTRASTO"; relationClass="bad";
+   relationText="L’affermazione descrive una conversione definitiva, mentre i documenti istituzionali disponibili descrivono un iter ancora in corso alla data delle fonti.";
+ }else if(candidates[0]&&((candidates[0].semantic||0)>=0.58 || candidates[0]._score>=45)){
+   relation="EVIDENZA DOCUMENTALE PERTINENTE"; relationClass="ok";
+   relationText="È stata individuata una fonte istituzionale semanticamente pertinente al contenuto dell’affermazione. La pertinenza non rappresenta un giudizio di verità: va letta insieme all’evidenza documentale.";
  }
 
- var lead=evidenceDocs[0]||null;
- var evidenceHtml=evidenceDocs.map(function(d){
+ var related=candidates.filter(function(d){return (d.semantic!=null?d.semantic>=0.45:d._score>=25);}).slice(0,6);
+ var evidence=related.map(function(d){
    return '<article class="ev"><h3>'+esc(d.title||"Documento ufficiale")+'</h3>'+
-   '<div class="chips"><span class="chip">'+esc(d.authority||"Fonte ufficiale")+'</span>'+
-   '<span class="chip">'+esc(d.document_type||"Documento")+'</span>'+
-   '<span class="chip">'+esc(d.version||"Versione non indicata")+'</span>'+
-   '<span class="chip">'+esc(d.article||"Riferimento non indicato")+'</span>'+
-   '<span class="chip">'+esc(d.status||"Stato non indicato")+'</span></div>'+
-   '<div class="meta-grid">'+
-   '<div class="meta-box"><b>Data</b><span>'+esc(d.date||"Non indicata")+'</span></div>'+
-   '<div class="meta-box"><b>Codice / riferimento</b><span>'+esc(d.reference_code||"Non indicato")+'</span></div>'+
-   '</div>'+
-   '<div class="quote"><b>Testo / evidenza disponibile</b><br>'+esc(d.excerpt||"Nessun estratto disponibile nel catalogo.")+'</div>'+
-   '<a href="'+esc(d.url||"#")+'" target="_blank" rel="noopener">Apri la fonte ufficiale →</a>'+
-   '</article>';
+   '<div class="chips"><span class="chip">'+esc(d.authority||"Fonte ufficiale")+'</span><span class="chip">'+esc(d.document_type||"Documento")+'</span><span class="chip">'+esc(d.version||"Versione non indicata")+'</span><span class="chip">'+esc(d.article||"Riferimento non indicato")+'</span><span class="chip">'+esc(d.status||"Stato non indicato")+'</span></div>'+
+   '<div class="meta-grid"><div class="meta-box"><b>Data</b><span>'+esc(d.date||"Non indicata")+'</span></div><div class="meta-box"><b>Codice / riferimento</b><span>'+esc(d.reference_code||"Non indicato")+'</span></div></div>'+
+   '<div class="quote"><b>Evidenza ufficiale</b><br>'+esc(d.excerpt||"Nessun estratto disponibile nel catalogo.")+'</div>'+
+   '<div class="comparison-side mini"><b>Pertinenza semantica:</b> '+(d.semantic!=null?d.semantic.toFixed(3):"non disponibile")+' · <b>corrispondenza testuale:</b> '+d._score+'%</div>'+
+   '<a href="'+esc(d.url||"#")+'" target="_blank" rel="noopener">Apri la fonte ufficiale →</a></article>';
  }).join("");
 
- out.innerHTML=
- '<div class="card comparison">'+
- '<span class="status '+relationClass+'">'+relation+'</span>'+
- '<div class="relation">'+relationText+'</div>'+
- '<div class="comparison-grid">'+
-   '<div class="comparison-side"><h3>Contenuto dichiarato</h3><p>'+esc(q)+'</p></div>'+
-   '<div class="comparison-side"><h3>Fonte istituzionale</h3><p>'+(lead?esc(lead.title):"Nessuna fonte specifica individuata")+'</p>'+(lead?'<div class="muted" style="font-size:12px;margin-top:8px">'+esc(lead.authority)+" · "+esc(lead.status)+"</div>":"")+'</div>'+
- '</div>'+
- '<div style="margin-top:18px"><h2 style="font-size:18px;margin:0 0 4px">Analisi comparativa</h2>'+
- '<p class="muted" style="line-height:1.55;margin-top:6px">Il sistema non assegna una valutazione politica e non stabilisce se una persona o una parte politica abbia ragione. Riporta la relazione documentale tra l’affermazione e le fonti ufficiali reperite.</p></div>'+
+ var method='<div class="notice"><b>Metodo:</b> l’analisi semantica serve a recuperare documenti che esprimono concetti simili anche con parole diverse. Non decide se un’affermazione è vera, non attribuisce merito o colpa e non esprime preferenze politiche. L’esito deriva dal confronto tra testo dichiarato ed evidenza documentale.</div>';
+
+ out.innerHTML='<div class="card"><span class="status '+relationClass+'">'+relation+'</span>'+
+ '<div class="claim">'+esc(q)+'</div>'+
+ '<div class="muted" style="font-size:12px">Fonte indicata dall’utente: '+esc(src||"non indicata")+'</div>'+
+ '<div class="comparison-grid"><div class="comparison-side"><h3>Contenuto dichiarato</h3><p>'+esc(q)+'</p></div>'+
+ '<div class="comparison-side"><h3>Documento più pertinente</h3><p>'+(candidates[0]?esc(candidates[0].title):"Nessun documento individuato")+'</p>'+(candidates[0]?'<div class="mini">'+esc(candidates[0].authority||"Fonte ufficiale")+' · pertinenza semantica '+(candidates[0].semantic!=null?candidates[0].semantic.toFixed(3):"n/d")+'</div>':"")+'</div></div>'+
+ '<div style="margin-top:18px"><h2 style="font-size:18px;margin:0 0 4px">Analisi comparativa</h2><p class="muted" style="line-height:1.55">'+esc(relationText)+'</p></div>'+
  '<h2 style="font-size:18px;margin:22px 0 6px">Fonti ed evidenze</h2>'+
- (evidenceHtml||'<div class="notice">Nessuna evidenza sufficientemente pertinente.</div>')+
- '<div class="notice method-note"><b>Tracciabilità:</b> per ogni fonte vengono mostrati, quando disponibili, autorità, documento, versione, data, articolo/riferimento, codice e collegamento alla fonte originale.</div>'+
- (src?'<div class="notice"><b>Fonte indicata dall’utente:</b> '+esc(src)+'</div>':"")+
- '</div>';
+ (evidence||'<div class="notice">Nessuna evidenza sufficientemente pertinente.</div>')+method+'</div>';
 }
 </script>
 </body>
