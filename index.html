@@ -55,51 +55,115 @@ h1{font-size:42px;line-height:1.05;margin:10px 0}.lead{color:var(--muted);max-wi
 </main>
 
 <script>
+const DEMO_DOCS=[
+ {title:"Decreto-Legge 17 settembre 2026, n. 162",authority:"Normattiva / Gazzetta Ufficiale",document_type:"Decreto-legge",date:"17/09/2026",version:"Testo originario",article:"Atto",status:"Pubblicato",url:"https://www.normattiva.it/",excerpt:"Decreto-legge 17 settembre 2026, n. 162 — testo dell'atto e riferimenti ufficiali.",reference_code:"2026-162"},
+ {title:"Iter parlamentare del D.L. 17 settembre 2026, n. 162",authority:"Senato della Repubblica",document_type:"Iter parlamentare",date:"18/09/2026",version:"Situazione dell'iter",article:"Lavori preparatori",status:"In corso di conversione",url:"https://www.senato.it/leg/leggi-e-documenti/disegni-di-legge",excerpt:"L'iter parlamentare è ancora in corso di conversione alla data del record.",reference_code:"D.L. 162/2026"},
+ {title:"Portale Open Data",authority:"Camera dei deputati",document_type:"Atto parlamentare",date:"2026",version:"Open Data",article:"",status:"Iter",url:"https://dati.camera.it/",excerpt:"Dati aperti relativi agli atti parlamentari.",reference_code:""}
+];
+
 let DB={updated_at:null,sources:[],documents:[]};
-const esc=s=>String(s??"").replace(/[&<>"]/g,x=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[x]));
-const tokens=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").split(/\s+/).filter(x=>x.length>2);
-const setS=new Set;
+
+function esc(value){
+ return String(value==null?"":value).replace(/[&<>"]/g,function(ch){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[ch];
+ });
+}
+function tokens(s){
+ return String(s||"").toLowerCase().normalize("NFD")
+  .replace(/[\u0300-\u036f]/g,"")
+  .replace(/[^a-z0-9]+/g," ")
+  .split(/\s+/).filter(function(x){return x.length>2;});
+}
 function score(q,d){
- const a=new Set(tokens(q)), b=[d.title,d.authority,d.document_type,d.article,d.status,d.excerpt,d.reference_code].join(" ");
- const ws=tokens(b); let hit=0;
- for(const w of new Set(ws)) if(a.has(w)) hit++;
- let exact=0;
- for(const t of tokens(q)) if(b.toLowerCase().includes(t)) exact++;
- return Math.min(100,Math.round((hit/(Math.max(8,new Set(ws).size)*0.12)+exact/Math.max(1,tokens(q).length)*35)));
+ const a=new Set(tokens(q));
+ const hay=[d.title,d.authority,d.document_type,d.article,d.status,d.excerpt,d.reference_code].join(" ").toLowerCase();
+ let hit=0;
+ new Set(tokens(hay)).forEach(function(w){ if(a.has(w)) hit++; });
+ const total=Math.max(1,tokens(q).length);
+ const exact=tokens(q).filter(function(t){return hay.indexOf(t)>=0;}).length;
+ return Math.min(99,Math.round((hit*7)+(exact/total*45)));
 }
 function renderSources(){
- const el=document.getElementById("sources");
- el.innerHTML=(DB.sources||[]).map(s=>'<div class="source"><strong><span class="dot"></span>'+esc(s.name)+'</strong><span>'+esc(s.coverage||"Fonte istituzionale")+'</span></div>').join("")||'<div class="notice">Nessuna informazione sullo stato delle fonti.</div>';
- document.getElementById("sync").textContent=DB.updated_at?"Ultimo aggiornamento catalogo: "+new Date(DB.updated_at).toLocaleString("it-IT"):"Catalogo in attesa del primo aggiornamento automatico";
+ const box=document.getElementById("sources");
+ const list=(DB.sources&&DB.sources.length)?DB.sources:[
+  {name:"Normattiva / dati.normattiva.it",coverage:"Atti normativi e versioni"},
+  {name:"Senato della Repubblica",coverage:"Disegni di legge e iter"},
+  {name:"Camera dei deputati",coverage:"Atti parlamentari"},
+  {name:"Gazzetta Ufficiale",coverage:"Pubblicazione ufficiale degli atti"},
+  {name:"Ministeri",coverage:"Documenti e comunicazioni istituzionali"}
+ ];
+ box.innerHTML=list.map(function(s){
+  return '<div class="source"><strong><span class="dot"></span>'+esc(s.name)+'</strong><span>'+esc(s.coverage||"Fonte istituzionale")+'</span></div>';
+ }).join("");
+ document.getElementById("sync").textContent=DB.updated_at
+  ?"Catalogo aggiornato: "+new Date(DB.updated_at).toLocaleString("it-IT")
+  :"Catalogo locale / dimostrativo";
 }
 async function loadDB(){
- try{const r=await fetch("data/sources.json?ts="+Date.now(),{cache:"no-store"}); if(!r.ok) throw new Error(); DB=await r.json();}catch(e){DB={updated_at:null,sources:[
- {name:"Normattiva / dati.normattiva.it",coverage:"Atti normativi e versioni"},
- {name:"Senato della Repubblica",coverage:"Disegni di legge e iter"},
- {name:"Camera dei deputati",coverage:"Atti parlamentari"},
- {name:"Gazzetta Ufficiale",coverage:"Pubblicazione ufficiale degli atti"},
- {name:"Ministeri",coverage:"Documenti e comunicazioni istituzionali"}],documents:[]};}
+ try{
+  const r=await fetch("data/sources.json?v="+Date.now(),{cache:"no-store"});
+  if(!r.ok) throw new Error("catalogo non raggiungibile");
+  const data=await r.json();
+  DB=data||{};
+  if(!Array.isArray(DB.documents)||DB.documents.length===0) DB.documents=DEMO_DOCS;
+ }catch(err){
+  DB={updated_at:null,sources:[],documents:DEMO_DOCS};
+ }
  renderSources();
 }
-function sample(){document.getElementById("src").value="https://www.senato.it/leggi-e-documenti/disegni-di-legge/scheda-ddl?did=60464";document.getElementById("claim").value="Il decreto-legge 17 settembre 2026, n. 162 è già stato convertito definitivamente in legge."}
+function sample(){
+ document.getElementById("src").value="https://www.senato.it/leg/leggi-e-documenti/disegni-di-legge";
+ document.getElementById("claim").value="Il decreto-legge 17 settembre 2026, n. 162 è già stato convertito definitivamente in legge.";
+}
 function classify(q,top){
  const low=q.toLowerCase();
- const conversionClaim=/(convertit|definitiv|legge di conversione)/.test(low)&&/162/.test(low);
- const pending=top&&/in corso|assegnato|non ancora iniziato/i.test([top.status,top.excerpt].join(" "));
- if(conversionClaim && pending) return ["CONTRADDETTA","bad","La fonte istituzionale indica che l'iter di conversione è ancora in corso alla data del record utilizzato."];
- if(top && top.s>=32) return ["SUPPORTATA DALLA FONTE","ok","Sono presenti elementi testuali e identificativi coerenti con la fonte istituzionale trovata. La verifica resta documentale e dipende dalla versione/data del documento."];
- return ["NON VERIFICABILE","warn","Nel catalogo attuale non è presente evidenza sufficiente per confermare o smentire con affidabilità l'affermazione."];
+ const conversionClaim=/convertit|definitiv|legge di conversione/.test(low)&&/162/.test(low);
+ const pending=top&&/in corso|assegnato|non ancora iniziato/.test(String(top.status||"").toLowerCase()+" "+String(top.excerpt||"").toLowerCase());
+ if(conversionClaim&&pending) return ["CONTRADDETTA","bad","La fonte istituzionale consultata indica che l'iter di conversione è ancora in corso alla data del record utilizzato."];
+ if(top&&top._score>=32) return ["SUPPORTATA DALLA FONTE","ok","Sono presenti elementi compatibili con un documento istituzionale catalogato. La versione e la data della fonte sono determinanti."];
+ return ["NON VERIFICABILE","warn","Nel catalogo disponibile non c'è evidenza sufficiente per confermare o smentire l'affermazione."];
 }
 function verify(){
- const q=document.getElementById("claim").value.trim(), src=document.getElementById("src").value.trim();
- if(!q){document.getElementById("out").innerHTML='<div class="card"><b>Inserisci l'informazione da verificare.</b></div>';return;}
- const docs=(DB.documents||[]).map(d=>({...d,_score:score(q,d)})).sort((a,b)=>b._score-a._score);
- const top=docs[0]||null; const [st,cl,ex]=classify(q,top);
- const evidence=docs.filter(d=>d._score>=24).slice(0,5);
- const ev=evidence.map(d=>'<article class="ev"><h3>'+esc(d.title||"Documento ufficiale")+'</h3><div class="chips"><span class="chip">'+esc(d.authority||"Fonte ufficiale")+'</span><span class="chip">'+esc(d.document_type||"Documento")+'</span><span class="chip">'+esc(d.version||"Versione non indicata")+'</span><span class="chip">'+esc(d.article||"Riferimento non indicato")+'</span><span class="chip">'+esc(d.status||"Stato non indicato")+'</span></div><div class="muted" style="font-size:12px">Data: '+esc(d.date||"non indicata")+' · Pertinenza: '+d._score+'%</div><div class="quote">'+esc(d.excerpt||"Nessun estratto disponibile nel catalogo.")+'</div>'+(d.url?'<a href="'+esc(d.url)+'" target="_blank" rel="noopener">Apri il documento / la fonte ufficiale →</a>':"")+'</article>').join("");
- document.getElementById("out").innerHTML='<div class="card"><span class="status '+cl+'">'+st+'</span><div class="claim">'+esc(q)+'</div><div class="muted" style="font-size:12px">Fonte indicata dall\'utente: '+esc(src||"non indicata")+'</div><p>'+esc(ex)+'</p><h2 style="font-size:18px;margin:22px 0 6px">Perché? — fonti ed evidenze</h2>'+(ev||'<div class="notice">Non sono state trovate evidenze sufficientemente pertinenti nel catalogo locale. Il sistema non interpreta questa assenza come prova di falsità.</div>')+'<div class="notice"><b>Metodo:</b> il risultato è basato sul confronto con documenti ufficiali catalogati. Le fonti e le versioni devono essere continuamente aggiornate; il sistema non sostituisce la lettura dell\'atto originale.</div></div>';
+ try{
+  const q=document.getElementById("claim").value.trim();
+  const src=document.getElementById("src").value.trim();
+  const out=document.getElementById("out");
+  if(!q){out.innerHTML='<div class="card"><b>Inserisci l’informazione da verificare.</b></div>';return;}
+  const docs=(Array.isArray(DB.documents)?DB.documents:DEMO_DOCS).map(function(d){
+    const x=Object.assign({},d); x._score=score(q,x); return x;
+  }).sort(function(a,b){return b._score-a._score;});
+  const top=docs[0]||null;
+  const status=classify(q,top), st=status[0], cls=status[1], explanation=status[2];
+  const evidence=docs.filter(function(d){return d._score>=20;}).slice(0,5);
+  let evidenceHtml=evidence.map(function(d){
+    return '<article class="ev"><h3>'+esc(d.title||"Documento ufficiale")+'</h3>'+
+      '<div class="chips"><span class="chip">'+esc(d.authority||"Fonte ufficiale")+'</span>'+
+      '<span class="chip">'+esc(d.document_type||"Documento")+'</span>'+
+      '<span class="chip">'+esc(d.version||"Versione non indicata")+'</span>'+
+      '<span class="chip">'+esc(d.article||"Riferimento non indicato")+'</span>'+
+      '<span class="chip">'+esc(d.status||"Stato non indicato")+'</span></div>'+
+      '<div class="muted" style="font-size:12px">Data: '+esc(d.date||"non indicata")+' · Pertinenza: '+d._score+'%</div>'+
+      '<div class="quote">'+esc(d.excerpt||"Nessun estratto disponibile.")+'</div>'+
+      (d.url?'<a href="'+esc(d.url)+'" target="_blank" rel="noopener">Apri la fonte ufficiale →</a>':"")+
+      '</article>';
+  }).join("");
+  if(!evidenceHtml) evidenceHtml='<div class="notice">Nessuna evidenza sufficientemente pertinente nel catalogo.</div>';
+  out.innerHTML='<div class="card"><span class="status '+cls+'">'+esc(st)+'</span>'+
+    '<div class="claim">'+esc(q)+'</div>'+
+    '<div class="muted" style="font-size:12px">Fonte indicata dall’utente: '+esc(src||"non indicata")+'</div>'+
+    '<p>'+esc(explanation)+'</p>'+
+    '<h2 style="font-size:18px;margin:22px 0 6px">Perché? — fonti ed evidenze</h2>'+
+    evidenceHtml+
+    '<div class="notice"><b>Nota MVP:</b> il risultato del prototipo è documentale e usa il catalogo disponibile. La sincronizzazione completa e il matching semantico avanzato sono ancora in sviluppo.</div></div>';
+ }catch(err){
+  document.getElementById("out").innerHTML='<div class="card"><b>Errore durante la verifica.</b><p class="muted">'+esc(err.message||"Errore inatteso")+'</p></div>';
+ }
 }
-loadDB();
+document.addEventListener("DOMContentLoaded",function(){
+ document.getElementById("verifyBtn").addEventListener("click",verify);
+ document.getElementById("sampleBtn").addEventListener("click",sample);
+ loadDB();
+});
 </script>
 </body>
 </html>
