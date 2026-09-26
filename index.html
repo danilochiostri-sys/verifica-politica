@@ -20,7 +20,7 @@ main{max-width:1080px;margin:auto;padding:34px 20px 64px}.ey{font-size:13px;font
 
 .ingest{margin-top:16px;padding:16px;border:1px dashed #cfd6e2;border-radius:16px;background:#fbfcfe}.ingest-title{font-weight:800;margin-bottom:6px}.ingest-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.file-name{font-size:12px;color:var(--muted)}.progress{display:none;margin-top:10px;height:9px;border-radius:99px;background:#e8ecf3;overflow:hidden}.progress-bar{height:100%;width:0;background:var(--blue);transition:width .25s}.transcript-box{display:none;margin-top:12px}.transcript-box textarea{min-height:160px}.source-note{margin-top:9px;font-size:12px;color:var(--muted);line-height:1.45}
  .claims-panel{display:none;margin-top:16px}.claim-item{border:1px solid var(--line);border-radius:14px;padding:13px;margin-top:10px;background:#fff}.claim-item .kind{font-size:11px;font-weight:800;text-transform:uppercase;color:var(--muted)}.claim-item button{margin-top:9px;padding:8px 12px;font-size:12px}.comparison{margin-top:16px}.relation{font-weight:800;font-size:15px}.comparison-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}.comparison-side{border:1px solid var(--line);border-radius:14px;padding:15px;background:#fff}.comparison-side h3{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 8px}.comparison-side p{margin:0;line-height:1.55}.meta-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}.meta-box{padding:10px 11px;border-radius:10px;background:#f8fafc}.meta-box b{display:block;font-size:11px;color:var(--muted);text-transform:uppercase}.meta-box span{display:block;margin-top:3px;font-size:13px}.method-note{margin-top:14px}@media(max-width:760px){.comparison-grid,.meta-grid{grid-template-columns:1fr}}
-.semantic-status{margin-top:10px;font-size:12px;color:var(--muted);padding:10px 12px;background:#f8fafc;border-radius:10px}.semantic-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#1d4ed8;margin-right:6px}.comparison-side .mini{font-size:12px;color:var(--muted);margin-top:8px}.analysis-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}.analysis-table th,.analysis-table td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.analysis-table th{font-size:11px;text-transform:uppercase;color:var(--muted)}</style>
+.semantic-status{margin-top:10px;font-size:12px;color:var(--muted);padding:10px 12px;background:#f8fafc;border-radius:10px}.semantic-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#1d4ed8;margin-right:6px}.comparison-side .mini{font-size:12px;color:var(--muted);margin-top:8px}.analysis-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}.analysis-table th,.analysis-table td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.analysis-table th{font-size:11px;text-transform:uppercase;color:var(--muted)}.temporal-badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:11px;font-weight:800;margin-top:6px}.timestamp{font-size:11px;color:var(--blue);margin-top:6px}</style>
 <script src="data/catalog.js" onerror="window.VP_CATALOG=null"></script></head>
 <body>
 <header><div class="logo">VP</div><div class="brand"><strong>Verifica Politica</strong><small>Verifica documentale di informazioni politiche</small></div></header>
@@ -30,11 +30,11 @@ main{max-width:1080px;margin:auto;padding:34px 20px 64px}.ey{font-size:13px;font
 <section class="card">
 <div class="grid">
 <label>Fonte / URL
-<input id="src" type="text" placeholder="https://... articolo, YouTube, pagina web">
+<input id="src" type="text" placeholder="https://... articolo, YouTube, pagina web" onblur="detectContentDate()">
 <div class="help">Puoi incollare un articolo, una pagina o un video YouTube.</div>
 <div style="margin-top:12px"><label>Data del contenuto (facoltativa)
 <input id="contentDate" type="date">
-<div class="help">Serve per confrontare la dichiarazione con lo stato delle fonti a quella data. Se non la conosci, lascia vuoto.</div>
+<div class="help">Serve per confrontare la dichiarazione con lo stato delle fonti a quella data. Se non la conosci, lascia vuoto.</div><div id="detectedDate" class="semantic-status" style="display:none;margin-top:8px"></div>
 </label></div>
 </label>
 <label>Informazione da verificare
@@ -82,14 +82,28 @@ function isVerifiable(s){
 function extractClaims(text){
  var clean=String(text||"").replace(/\r/g,"").replace(/\s+/g," ").trim();
  var parts=clean.split(/(?<=[.!?])\s+(?=[A-ZÀ-ÖØ-Þ0-9"“])/);
- var out=[];
+ var out=[], cursor=0, segs=window.transcriptSegments||[];
  parts.forEach(function(p){
    p=p.trim().replace(/^[-•]+\s*/,"");
    if(p.length<25||p.length>700)return;
-   if(isVerifiable(p)) out.push({text:p,kind:"FATTO DA VERIFICARE"});
-   else if(isOpinion(p)) out.push({text:p,kind:"OPINIONE / COMMENTO"});
+   var item={text:p,kind:""};
+   if(isVerifiable(p)) item.kind="FATTO DA VERIFICARE";
+   else if(isOpinion(p)) item.kind="OPINIONE / COMMENTO";
+   else return;
+   if(segs.length){
+     var pos=clean.indexOf(p,cursor); if(pos<0)pos=cursor;
+     var before=clean.slice(0,pos).length, after=before+p.length, acc=0, ss=null, ee=null;
+     segs.forEach(function(s){
+       var st=s.text||"", stPos=acc, stEnd=acc+st.length+1; acc=stEnd;
+       if(ss==null&&stEnd>=before){ss=s.start;}
+       if(stPos<=after&&stEnd>=before){ee=s.end;}
+     });
+     if(ss!=null)item.start=ss; if(ee!=null)item.end=ee;
+     cursor=Math.max(cursor,pos+p.length);
+   }
+   out.push(item);
  });
- if(!out&&clean) out=[{text:clean.slice(0,700),kind:"TESTO DA ESAMINARE"}];
+ if(!out&&clean)out=[{text:clean.slice(0,700),kind:"TESTO DA ESAMINARE"}];
  return out.slice(0,30);
 }
 function extractAndShowClaims(){
@@ -97,7 +111,7 @@ function extractAndShowClaims(){
  if(!text){document.getElementById("transcriptStatus").textContent="Inserisci o trascrivi prima un contenuto.";return;}
  var claims=extractClaims(text), box=document.getElementById("claimsPanel"), list=document.getElementById("claimsList");
  list.innerHTML=claims.map(function(x,i){
-   return '<div class="claim-item"><div class="kind">'+esc(x.kind)+'</div><div style="margin-top:5px;line-height:1.45">'+esc(x.text)+'</div>'+ (x.kind==="OPINIONE / COMMENTO"?'':'<button type="button" onclick="useClaim('+i+')">Confronta questa affermazione</button>')+'</div>';
+   return '<div class="claim-item"><div class="kind">'+esc(x.kind)+'</div>'+((x.start!=null)?'<div class="timestamp">⏱ '+formatTime(x.start)+(x.end!=null?' – '+formatTime(x.end):'')+'</div>':'')+'<div style="margin-top:5px;line-height:1.45">'+esc(x.text)+'</div>'+ (x.kind==="OPINIONE / COMMENTO"?'':'<button type="button" onclick="useClaim('+i+')">Confronta questa affermazione</button>')+'</div>';
  }).join("");
  window.detectedClaims=claims; box.style.display="block";
 }
@@ -181,18 +195,92 @@ async function semanticRank(query,candidates,statusEl){
    return candidates;
  }
 }
+function isoFromParts(y,m,d){
+ var yy=String(y), mm=String(m).padStart(2,"0"), dd=String(d).padStart(2,"0");
+ var date=yy+"-"+mm+"-"+dd;
+ var dt=new Date(date+"T00:00:00Z");
+ return isNaN(dt.getTime())?null:date;
+}
+function detectDateFromText(text){
+ var s=String(text||"").slice(0,4000);
+ var m=s.match(/\b(20\d{2})[-\/.](\d{1,2})[-\/.](\d{1,2})\b/);
+ if(m){var x=isoFromParts(m[1],m[2],m[3]);if(x)return {date:x,reason:"data rilevata nel testo"};}
+ m=s.match(/\b(\d{1,2})[\/-](\d{1,2})[\/-](20\d{2})\b/);
+ if(m){var x2=isoFromParts(m[3],m[2],m[1]);if(x2)return {date:x2,reason:"data rilevata nel testo"};}
+ m=s.match(/(?:pubblicato|pubblicata|pubblicazione|data)[^0-9]{0,25}(\d{1,2})\s+(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)\s+(20\d{2})/i);
+ if(m){
+  var months={gennaio:1,febbraio:2,marzo:3,aprile:4,maggio:5,giugno:6,luglio:7,agosto:8,settembre:9,ottobre:10,novembre:11,dicembre:12};
+  var x3=isoFromParts(m[3],months[m[2].toLowerCase()],m[1]);if(x3)return {date:x3,reason:"data rilevata nel testo"};
+ }
+ return null;
+}
+function detectDateFromUrl(url){
+ var s=String(url||"");
+ var m=s.match(/\b(20\d{2})[-_](\d{1,2})[-_](\d{1,2})\b/);
+ if(m){var x=isoFromParts(m[1],m[2],m[3]);if(x)return {date:x,reason:"data rilevata nell'URL"};}
+ m=s.match(/\b(\d{1,2})[-_](\d{1,2})[-_](20\d{2})\b/);
+ if(m){var x2=isoFromParts(m[3],m[2],m[1]);if(x2)return {date:x2,reason:"data rilevata nell'URL"};}
+ return null;
+}
+function detectContentDate(){
+ var manual=document.getElementById("contentDate").value;
+ var src=document.getElementById("src").value.trim();
+ var claim=document.getElementById("claim").value.trim();
+ var box=document.getElementById("detectedDate");
+ if(manual){box.style.display="block";box.innerHTML='<span class="temporal-badge">DATA INSERITA</span> '+esc(manual);return manual;}
+ var result=detectDateFromUrl(src)||detectDateFromText(claim);
+ if(result){
+   document.getElementById("contentDate").value=result.date;
+   box.style.display="block";
+   box.innerHTML='<span class="temporal-badge">DATA RILEVATA</span> '+esc(result.date)+' · '+esc(result.reason);
+   return result.date;
+ }
+ if(/youtube\.com|youtu\.be/i.test(src)){
+   box.style.display="block";
+   box.innerHTML='La data di pubblicazione del video YouTube non viene inventata. Se serve il confronto storico, inserisci la data del video.';
+ }else{
+   box.style.display="block";
+   box.innerHTML='Data del contenuto non determinata automaticamente.';
+ }
+ return "";
+}
+function formatTime(sec){
+ if(sec==null||isNaN(sec))return "";
+ var s=Math.max(0,Math.floor(sec)), h=Math.floor(s/3600), m=Math.floor((s%3600)/60), z=s%60;
+ return h?String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(z).padStart(2,"0"):String(m).padStart(2,"0")+":"+String(z).padStart(2,"0");
+}
+function attachTimestamps(text){
+ var segs=window.transcriptSegments||[];
+ if(!segs.length)return text;
+ var first=text.slice(0,80).toLowerCase();
+ for(var i=0;i<segs.length;i++){
+   if(segs[i].text&&first.indexOf(segs[i].text.trim().toLowerCase().slice(0,30))>=0)return text;
+ }
+ return text;
+}
 function sample(){
  document.getElementById("src").value="https://www.senato.it/export/ddl/full/60464?leg=19";
  document.getElementById("claim").value="Il decreto-legge 17 settembre 2026, n. 162 è già stato convertito definitivamente in legge.";
 }
 function cleanSubtitleText(text){
- return String(text||"").replace(/\r/g,"")
- .replace(/^WEBVTT.*$/gim,"")
- .replace(/^NOTE.*$/gim,"")
- .replace(/^\d+$\n/gm,"")
- .replace(/\d{1,2}:\d{2}(?::\d{2})?[.,]\d{3}\s+-->\s+.*$/gm,"")
- .replace(/<[^>]+>/g," ")
- .replace(/\n{2,}/g,"\n").trim();
+ window.transcriptSegments=parseSubtitleSegments(text);
+ return window.transcriptSegments.map(function(s){return s.text;}).join(" ");
+}
+function parseSubtitleSegments(text){
+ var src=String(text||"").replace(/\r/g,"");
+ var blocks=src.split(/\n\s*\n/), out=[];
+ blocks.forEach(function(b){
+  var lines=b.split("\n").map(function(x){return x.trim();}).filter(Boolean);
+  var ti=lines.findIndex(function(x){return /-->/.test(x);});
+  if(ti<0)return;
+  var tm=lines[ti].match(/(\d{1,2}):(\d{2})(?::(\d{2}))?[.,](\d{3})\s+-->\s+(\d{1,2}):(\d{2})(?::(\d{2}))?[.,](\d{3})/);
+  var txt=lines.slice(ti+1).join(" ").replace(/<[^>]+>/g," ").trim();
+  if(!txt)return;
+  var startSec=tm?((+(tm[1])*60+(+tm[2]))+(tm[3]?+tm[3]*60:0)+(+tm[4])/1000):null;
+  var endSec=tm?((+(tm[5])*60+(+tm[6]))+(tm[7]?+tm[7]*60:0)+(+tm[8])/1000):null;
+  out.push({start:startSec,end:endSec,text:txt});
+ });
+ return out;
 }
 async function handleLocalFile(e){
  selectedFile=e.target.files&&e.target.files[0]?e.target.files[0]:null;
@@ -265,6 +353,7 @@ async function transcribeSelected(){
    var result=await transcriber(url,{return_timestamps:true,chunk_length_s:30,stride_length_s:5,language:"italian",task:"transcribe"});
    URL.revokeObjectURL(url);
    var text=result.text||"";
+   window.transcriptSegments=(result.chunks||[]).map(function(x){var t=x.timestamp||[];return {start:Array.isArray(t)?t[0]:null,end:Array.isArray(t)?t[1]:null,text:x.text||""};}).filter(function(x){return x.text;});
    document.getElementById("transcriptText").value=text.trim();
    document.getElementById("claim").value=text.trim();
    document.getElementById("transcriptBox").style.display="block";
@@ -292,7 +381,7 @@ function findEvidence(q){
 async function verify(){
  var q=document.getElementById("claim").value.trim();
  var src=document.getElementById("src").value.trim();
- var contentDate=document.getElementById("contentDate").value;
+ var contentDate=detectContentDate();
  var out=document.getElementById("out");
  if(!q){out.innerHTML='<div class="card"><b>Inserisci l’informazione da confrontare.</b></div>';return;}
 
