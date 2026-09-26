@@ -217,6 +217,7 @@ function nbBuildGroundedAnswer(question,docs){
 }
 async function notebookAsk(){
  var input=document.getElementById("nbQuestion"), q=String(input&&input.value||"").trim();
+ window.contentDateForNotebook=document.getElementById("contentDate")&&document.getElementById("contentDate").value||"";
  if(!q)return;
  var box=document.getElementById("nbMessages");
  box.innerHTML+='<div class="nb-msg nb-user">'+nbEscHtml(q)+'</div>';
@@ -257,7 +258,7 @@ async function notebookAsk(){
      evidence_basis:d.evidence_basis,authority:d.authority,date:d.date,status:d.status,
      version:d.version,article:d.article,reference_code:d.reference_code,
      record_fingerprint:d.record_fingerprint,semantic:d.semantic,score:d._score,
-     fulltext_url:d.fulltext_url
+     fulltext_url:d.fulltext_url,fulltext_path:d.fulltext_path,fulltext_hash:d.fulltext_hash
    };
  });
 
@@ -287,6 +288,22 @@ function normalizeSearchText(s){
 function articleNumber(s){
  var m=String(s||"").match(/(?:articolo|art\.?)[\s._-]*([0-9]+(?:-bis|-ter|-quater)?)/i);
  return m?m[1]:null;
+}
+function normattivaLink(d,article,contentDate){
+ if(!d)return null;
+ var title=String(d.title||"").toLowerCase(), type=String(d.document_type||"").toLowerCase(), date=String(d.date||"");
+ var num=String(d.title||"").match(/\bn\.?\s*(\d+)\b/i);
+ if(!num||!/20\d{2}-\d{2}-\d{2}/.test(date))return d.fulltext_url||d.url||null;
+ var slug=(/decreto-?legge/.test(title)||/decreto-?legge/.test(type))?"decreto.legge":((/^legge\b/.test(title)||type==="legge")?"legge":null);
+ if(!slug)return d.fulltext_url||d.url||null;
+ var urn="urn:nir:stato:"+slug+":"+date+";"+num[1];
+ if(article){
+   var a=String(article).match(/([0-9]+(?:-bis|-ter|-quater)?)/i);
+   if(a)urn+="~art"+a[1];
+ }
+ if(contentDate)urn+="!vig="+encodeURIComponent(contentDate);
+ else urn+="@originale";
+ return "https://www.normattiva.it/uri-res/N2Ls?"+urn;
 }
 function chooseFulltextPath(d){
  if(!d)return null;
@@ -356,11 +373,14 @@ async function showNotebookSource(i){
    return;
  }
  var found=findBestFulltextPassage(nbLastAnswer.question,rec);
+ var articleLink=normattivaLink(d,found&&found.article,window.contentDateForNotebook||null);
  if(found){
    d.fulltextArticle=found.article;
    d.fulltextPassage=found.text;
    box.innerHTML='<div class="fulltext-label">Passaggio più pertinente nel testo integrale</div><div class="fulltext-passage">'+esc(found.text)+'</div>'+
-     '<div class="fulltext-meta"><b>Riferimento:</b> '+esc(found.article||"Testo integrale")+' · <b>Hash:</b> '+esc(found.hash||"n/d")+'</div>';
+     '<div class="fulltext-meta"><b>Riferimento:</b> '+esc(found.article||"Testo integrale")+' · <b>Hash:</b> '+esc(found.hash||"n/d")+
+     (articleLink?' · <a href="'+esc(articleLink)+'" target="_blank" rel="noopener">Apri questo articolo in Normattiva →</a>':"")+
+     '</div>';
  }else{
    box.innerHTML='<div class="fulltext-label">Testo integrale</div><div class="notice" style="margin:8px 0 0">Il testo è disponibile, ma non è stato individuato un passaggio sufficientemente pertinente alla domanda.</div>';
  }
