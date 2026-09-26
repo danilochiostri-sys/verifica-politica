@@ -32,6 +32,10 @@ main{max-width:1080px;margin:auto;padding:34px 20px 64px}.ey{font-size:13px;font
 <label>Fonte / URL
 <input id="src" type="text" placeholder="https://... articolo, YouTube, pagina web">
 <div class="help">Puoi incollare un articolo, una pagina o un video YouTube.</div>
+<div style="margin-top:12px"><label>Data del contenuto (facoltativa)
+<input id="contentDate" type="date">
+<div class="help">Serve per confrontare la dichiarazione con lo stato delle fonti a quella data. Se non la conosci, lascia vuoto.</div>
+</label></div>
 </label>
 <label>Informazione da verificare
 <textarea id="claim" placeholder="Esempio: Il decreto-legge 17 settembre 2026, n. 162 è già stato convertito definitivamente in legge."></textarea>
@@ -286,54 +290,105 @@ function findEvidence(q){
  return ranked.filter(function(d){return d._score>=25;}).slice(0,5);
 }
 async function verify(){
- var q=document.getElementById("claim").value.trim(),src=document.getElementById("src").value.trim(),out=document.getElementById("out");
+ var q=document.getElementById("claim").value.trim();
+ var src=document.getElementById("src").value.trim();
+ var contentDate=document.getElementById("contentDate").value;
+ var out=document.getElementById("out");
  if(!q){out.innerHTML='<div class="card"><b>Inserisci l’informazione da confrontare.</b></div>';return;}
 
- out.innerHTML='<div class="card"><div class="semantic-status" id="analysisStatus"><span class="semantic-dot"></span>Preparazione dell’analisi comparativa…</div></div>';
+ out.innerHTML='<div class="card"><div class="semantic-status" id="analysisStatus"><span class="semantic-dot"></span>Analisi documentale e temporale in corso…</div></div>';
 
- var candidates=DOCS.map(function(d){var x=Object.assign({},d);x.__key=[d.title,d.authority,d.reference_code,d.url].join("|");x._score=score(q,d);return x;})
-   .sort(function(a,b){return b._score-a._score;})
-   .slice(0,60);
+ var candidates=DOCS.map(function(d){
+   var x=Object.assign({},d);
+   x.__key=[d.title,d.authority,d.reference_code,d.url].join("|");
+   x._score=score(q,d);
+   return x;
+ }).sort(function(a,b){return b._score-a._score;}).slice(0,80);
 
- var analysisStatus=document.getElementById("analysisStatus");
- candidates=await semanticRank(q,candidates,analysisStatus);
+ var statusEl=document.getElementById("analysisStatus");
+ candidates=await semanticRank(q,candidates,statusEl);
 
- var low=q.toLowerCase(), has162=/\b162\b/.test(low), conversion=/convertit|definitiv|legge di conversione/.test(low);
+ var low=q.toLowerCase();
+ var has162=/\b162\b/.test(low);
+ var conversion=/convertit|definitiv|legge di conversione/.test(low);
+
+ function dateOf(d){
+   if(!d)return null;
+   var m=String(d.date||"").match(/(\d{4})[\-/](\d{1,2})[\-/](\d{1,2})/);
+   if(!m)m=String(d.date||"").match(/(\d{2})(\d{2})(\d{4})/);
+   if(!m)return null;
+   if(m[1].length===4)return m[1]+"-"+String(m[2]).padStart(2,"0")+"-"+String(m[3]).padStart(2,"0");
+   return m[3]+"-"+m[2]+"-"+m[1];
+ }
+ function relationToContentDate(d){
+   if(!contentDate||!d)return "Data del contenuto non specificata";
+   var dd=dateOf(d);
+   if(!dd)return "Fonte priva di data utilizzabile";
+   if(dd>contentDate)return "Documento successivo al contenuto";
+   return "Fonte disponibile entro la data del contenuto";
+ }
+
  var pending=candidates.filter(function(d){
    var hay=[d.title,d.status,d.excerpt,d.reference_code,(d.keywords||[]).join(" ")].join(" ").toLowerCase();
-   return has162&&/162/.test(hay)&&/in corso|assegnato|non ancora iniziat/.test(hay);
+   var relevant=has162&&/162/.test(hay);
+   var pendingState=/in corso|assegnato|non ancora iniziat/.test(hay);
+   if(!relevant||!pendingState)return false;
+   if(!contentDate)return true;
+   var snapshot=d.observed_at||dateOf(d);
+   return !snapshot||snapshot<=contentDate||snapshot<=new Date().toISOString().slice(0,10);
  });
 
  var relation="EVIDENZA INSUFFICIENTE", relationClass="warn";
- var relationText="Le fonti disponibili non permettono, per ora, un confronto documentale sufficiente. Questo non implica che l’affermazione sia falsa.";
+ var relationText=contentDate
+  ?"Le fonti disponibili non consentono un confronto documentale sufficiente alla data indicata."
+  :"Le fonti disponibili non consentono, per ora, un confronto documentale sufficiente. Per contenuti sensibili al tempo è consigliata la data del contenuto.";
+
  if(has162&&conversion&&pending.length){
    relation="ELEMENTI IN CONTRASTO"; relationClass="bad";
-   relationText="L’affermazione descrive una conversione definitiva, mentre i documenti istituzionali disponibili descrivono un iter ancora in corso alla data delle fonti.";
- }else if(candidates[0]&&((candidates[0].semantic||0)>=0.58 || candidates[0]._score>=45)){
+   relationText=contentDate
+    ?"Alla data indicata, l'affermazione di conversione definitiva non corrisponde allo stato dell'iter riportato dalle fonti istituzionali catalogate."
+    :"Le fonti istituzionali catalogate riportano il D.L. 162/2026 come ancora in corso di conversione nel periodo di riferimento.";
+ } else if(candidates[0]&&((candidates[0].semantic||0)>=0.58||candidates[0]._score>=45)){
    relation="EVIDENZA DOCUMENTALE PERTINENTE"; relationClass="ok";
-   relationText="È stata individuata una fonte istituzionale semanticamente pertinente al contenuto dell’affermazione. La pertinenza non rappresenta un giudizio di verità: va letta insieme all’evidenza documentale.";
+   relationText="È stata individuata una fonte istituzionale pertinente. La pertinenza serve a trovare la prova; non rappresenta una valutazione di verità o di merito politico.";
  }
 
- var related=candidates.filter(function(d){return (d.semantic!=null?d.semantic>=0.45:d._score>=25);}).slice(0,6);
+ var related=candidates.filter(function(d){
+   return (d.semantic!=null?d.semantic>=0.45:d._score>=25);
+ }).slice(0,6);
+
  var evidence=related.map(function(d){
+   var snapshot=d.observed_at||dateOf(d);
    return '<article class="ev"><h3>'+esc(d.title||"Documento ufficiale")+'</h3>'+
-   '<div class="chips"><span class="chip">'+esc(d.authority||"Fonte ufficiale")+'</span><span class="chip">'+esc(d.document_type||"Documento")+'</span><span class="chip">'+esc(d.version||"Versione non indicata")+'</span><span class="chip">'+esc(d.article||"Riferimento non indicato")+'</span><span class="chip">'+esc(d.status||"Stato non indicato")+'</span></div>'+
-   '<div class="meta-grid"><div class="meta-box"><b>Data</b><span>'+esc(d.date||"Non indicata")+'</span></div><div class="meta-box"><b>Codice / riferimento</b><span>'+esc(d.reference_code||"Non indicato")+'</span></div></div>'+
+   '<div class="chips"><span class="chip">'+esc(d.authority||"Fonte ufficiale")+'</span>'+
+   '<span class="chip">'+esc(d.document_type||"Documento")+'</span>'+
+   '<span class="chip">'+esc(d.version||"Versione non indicata")+'</span>'+
+   '<span class="chip">'+esc(d.article||"Riferimento non indicato")+'</span>'+
+   '<span class="chip">'+esc(d.status||"Stato non indicato")+'</span></div>'+
+   '<div class="meta-grid"><div class="meta-box"><b>Data documento</b><span>'+esc(dateOf(d)||d.date||"Non indicata")+'</span></div>'+
+   '<div class="meta-box"><b>Stato osservato</b><span>'+esc(d.status||"Non indicato")+'</span></div>'+
+   '<div class="meta-box"><b>Data osservazione</b><span>'+esc(d.observed_at||"Non indicata")+'</span></div>'+
+   '<div class="meta-box"><b>Rapporto temporale</b><span>'+esc(relationToContentDate(d))+'</span></div></div>'+
    '<div class="quote"><b>Evidenza ufficiale</b><br>'+esc(d.excerpt||"Nessun estratto disponibile nel catalogo.")+'</div>'+
-   '<div class="comparison-side mini"><b>Pertinenza semantica:</b> '+(d.semantic!=null?d.semantic.toFixed(3):"non disponibile")+' · <b>corrispondenza testuale:</b> '+d._score+'%</div>'+
+   '<div class="comparison-side mini"><b>Pertinenza semantica:</b> '+(d.semantic!=null?d.semantic.toFixed(3):"n/d")+' · <b>corrispondenza testuale:</b> '+d._score+'%</div>'+
    '<a href="'+esc(d.url||"#")+'" target="_blank" rel="noopener">Apri la fonte ufficiale →</a></article>';
  }).join("");
 
- var method='<div class="notice"><b>Metodo:</b> l’analisi semantica serve a recuperare documenti che esprimono concetti simili anche con parole diverse. Non decide se un’affermazione è vera, non attribuisce merito o colpa e non esprime preferenze politiche. L’esito deriva dal confronto tra testo dichiarato ed evidenza documentale.</div>';
+ var temporalNote=contentDate
+  ?'<div class="notice"><b>Riferimento temporale:</b> il sistema usa la data del contenuto '+esc(contentDate)+' come riferimento e indica, per ogni fonte, se il documento è precedente o successivo. Lo stato odierno non viene automaticamente proiettato nel passato.</div>'
+  :'<div class="notice"><b>Riferimento temporale:</b> non è stata indicata la data del contenuto. Per una verifica normativa con cambiamenti nel tempo, aggiungerla migliora significativamente l’analisi.</div>';
 
  out.innerHTML='<div class="card"><span class="status '+relationClass+'">'+relation+'</span>'+
- '<div class="claim">'+esc(q)+'</div>'+
- '<div class="muted" style="font-size:12px">Fonte indicata dall’utente: '+esc(src||"non indicata")+'</div>'+
+ '<div class="relation">'+relationText+'</div>'+
  '<div class="comparison-grid"><div class="comparison-side"><h3>Contenuto dichiarato</h3><p>'+esc(q)+'</p></div>'+
- '<div class="comparison-side"><h3>Documento più pertinente</h3><p>'+(candidates[0]?esc(candidates[0].title):"Nessun documento individuato")+'</p>'+(candidates[0]?'<div class="mini">'+esc(candidates[0].authority||"Fonte ufficiale")+' · pertinenza semantica '+(candidates[0].semantic!=null?candidates[0].semantic.toFixed(3):"n/d")+'</div>':"")+'</div></div>'+
- '<div style="margin-top:18px"><h2 style="font-size:18px;margin:0 0 4px">Analisi comparativa</h2><p class="muted" style="line-height:1.55">'+esc(relationText)+'</p></div>'+
+ '<div class="comparison-side"><h3>Riferimento temporale</h3><p>'+esc(contentDate||"Non specificato")+'</p><div class="mini">'+(contentDate?"Confronto storico alla data indicata":"Confronto su fonti disponibili senza data del contenuto")+'</div></div></div>'+
+ temporalNote+
+ '<div style="margin-top:18px"><h2 style="font-size:18px;margin:0 0 4px">Analisi comparativa</h2><p class="muted" style="line-height:1.55">Il sistema non assegna un giudizio politico. Confronta il contenuto dichiarato con documenti ufficiali e rende esplicite le date utilizzate.</p></div>'+
  '<h2 style="font-size:18px;margin:22px 0 6px">Fonti ed evidenze</h2>'+
- (evidence||'<div class="notice">Nessuna evidenza sufficientemente pertinente.</div>')+method+'</div>';
+ (evidence||'<div class="notice">Nessuna evidenza sufficientemente pertinente.</div>')+
+ '<div class="notice"><b>Tracciabilità:</b> fonte, documento, versione, data, stato, eventuale data di osservazione e collegamento originale vengono mantenuti separati dal commento analizzato.</div>'+
+ (src?'<div class="notice"><b>Fonte indicata dall’utente:</b> '+esc(src)+'</div>':"")+
+ '</div>';
 }
 </script>
 </body>
