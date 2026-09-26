@@ -92,8 +92,8 @@ def normattiva():
          title=(a.get("titoloAtto") or a.get("descrizioneAtto") or "").strip(" []"); denom=(a.get("denominazioneAtto") or term).strip()
          if term=="DECRETO-LEGGE" and "DECRETO-LEGGE" not in denom.upper(): continue
          date=a.get("dataEmanazione") or a.get("dataGU") or ""; code=a.get("codiceRedazionale") or ""
-         url=f"https://www.gazzettaufficiale.it/eli/id/{a.get('dataGU')}/{code}/sg" if a.get("dataGU") and code else "https://www.normattiva.it/"
-         add(out,title=title,authority="Normattiva / IPZS",document_type=denom,date=date[:10] if isinstance(date,str) else date,version="metadati ufficiali",article="",status="pubblicato",url=url,excerpt=title,reference_code=code,source_url="https://dati.normattiva.it/",keywords=re.findall(r"[a-z0-9]+",title.lower()))
+         url=f"https://www.gazzettaufficiale.it/eli/id/{a.get('dataGU')}/{code}/SG" if a.get("dataGU") and code else "https://www.normattiva.it/"
+         add(out,title=title,authority="Normattiva / IPZS",document_type=denom,date=date[:10] if isinstance(date,str) else date,version="metadati ufficiali",article="",status="pubblicato",url=url,excerpt=title,reference_code=code,source_url="https://dati.normattiva.it/",canonical_url=url,keywords=re.findall(r"[a-z0-9]+",title.lower()))
        except Exception as e: print("Normattiva",term,page,e); break
     return out
 def rss(url,authority,kind,limit=100):
@@ -149,6 +149,11 @@ def main():
     for d in targets:
       enrich_fulltext(d,counter)
     for d in clean:
+      u=str(d.get("url") or "")
+      if u.startswith("https://www.gazzettaufficiale.it/eli/id/") and u.lower().endswith("/sg"):
+        d["url"]=u[:-3]+"SG"
+      if d.get("url") and "gazzettaufficiale.it" in str(d.get("url")):
+        d["canonical_url"]=d["url"]
       basis="|".join(str(d.get(k,"") or "") for k in ("title","authority","document_type","date","version","article","status","url","excerpt","reference_code"))
       d["record_fingerprint"]=hashlib.sha256(basis.encode("utf-8")).hexdigest()[:16]
       d["retrieved_at"]=now
