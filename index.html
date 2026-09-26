@@ -19,7 +19,7 @@ main{max-width:1080px;margin:auto;padding:34px 20px 64px}.ey{font-size:13px;font
 @media(max-width:800px){.grid,.sources,.steps{grid-template-columns:1fr}h1{font-size:34px}}
 
 .ingest{margin-top:16px;padding:16px;border:1px dashed #cfd6e2;border-radius:16px;background:#fbfcfe}.ingest-title{font-weight:800;margin-bottom:6px}.ingest-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.file-name{font-size:12px;color:var(--muted)}.progress{display:none;margin-top:10px;height:9px;border-radius:99px;background:#e8ecf3;overflow:hidden}.progress-bar{height:100%;width:0;background:var(--blue);transition:width .25s}.transcript-box{display:none;margin-top:12px}.transcript-box textarea{min-height:160px}.source-note{margin-top:9px;font-size:12px;color:var(--muted);line-height:1.45}
-</style>
+ .claims-panel{display:none;margin-top:16px}.claim-item{border:1px solid var(--line);border-radius:14px;padding:13px;margin-top:10px;background:#fff}.claim-item .kind{font-size:11px;font-weight:800;text-transform:uppercase;color:var(--muted)}.claim-item button{margin-top:9px;padding:8px 12px;font-size:12px}</style>
 <script src="data/catalog.js" onerror="window.VP_CATALOG=null"></script></head>
 <body>
 <header><div class="logo">VP</div><div class="brand"><strong>Verifica Politica</strong><small>Verifica documentale di informazioni politiche</small></div></header>
@@ -52,7 +52,7 @@ main{max-width:1080px;margin:auto;padding:34px 20px 64px}.ey{font-size:13px;font
 <div class="source"><strong><span class="dot"></span>Governo / Ministeri</strong><span>Documenti e comunicazioni istituzionali</span></div>
 </div>
 
-<div id="out" class="result"></div>
+<div id="out" class="result"></div><div id="claimsPanel" class="card claims-panel"><h2 style="font-size:18px;margin:0">Affermazioni individuate</h2><p class="muted" style="font-size:12px">Separiamo le frasi che possono essere confrontate con documenti ufficiali dalle opinioni.</p><div id="claimsList"></div></div>
 
 <section class="steps">
 <div class="step"><b>01 — Affermazione</b><span>Identifichiamo ciò che può essere verificato documentalmente.</span></div>
@@ -62,6 +62,46 @@ main{max-width:1080px;margin:auto;padding:34px 20px 64px}.ey{font-size:13px;font
 </main>
 
 <script>
+
+function isOpinion(s){
+ var x=s.toLowerCase().trim();
+ return /\b(penso|secondo me|a mio avviso|ritengo|credo|mi sembra|vergognos|assurdo|folle|ridicolo|scandaloso|incredibile)\b/.test(x)
+   || /^(che schifo|bravo|vergogna|assurdo)[!.]?$/i.test(x);
+}
+function isVerifiable(s){
+ var x=s.toLowerCase();
+ if(isOpinion(s)) return false;
+ return /\b(ha|hanno|è|sono|era|erano|sarà|saranno|deve|devono|può|possono|prevede|stabilisce|approvato|approvata|approvati|approvate|convertito|convertita|vietato|obbliga|elimina|aumenta|riduce|costa|stanziati|milioni|miliardi|%|articolo|decreto|legge|governo|ministero|senato|camera)\b/.test(x)
+   && s.split(/\s+/).length>=5;
+}
+function extractClaims(text){
+ var clean=String(text||"").replace(/\r/g,"").replace(/\s+/g," ").trim();
+ var parts=clean.split(/(?<=[.!?])\s+(?=[A-ZÀ-ÖØ-Þ0-9"“])/);
+ var out=[];
+ parts.forEach(function(p){
+   p=p.trim().replace(/^[-•]+\s*/,"");
+   if(p.length<25||p.length>700)return;
+   if(isVerifiable(p)) out.push({text:p,kind:"FATTO DA VERIFICARE"});
+   else if(isOpinion(p)) out.push({text:p,kind:"OPINIONE / COMMENTO"});
+ });
+ if(!out&&clean) out=[{text:clean.slice(0,700),kind:"TESTO DA ESAMINARE"}];
+ return out.slice(0,30);
+}
+function extractAndShowClaims(){
+ var text=document.getElementById("transcriptText").value.trim()||document.getElementById("claim").value.trim();
+ if(!text){document.getElementById("transcriptStatus").textContent="Inserisci o trascrivi prima un contenuto.";return;}
+ var claims=extractClaims(text), box=document.getElementById("claimsPanel"), list=document.getElementById("claimsList");
+ list.innerHTML=claims.map(function(x,i){
+   return '<div class="claim-item"><div class="kind">'+esc(x.kind)+'</div><div style="margin-top:5px;line-height:1.45">'+esc(x.text)+'</div>'+ (x.kind==="OPINIONE / COMMENTO"?'':'<button type="button" onclick="useClaim('+i+')">Verifica questa affermazione</button>')+'</div>';
+ }).join("");
+ window.detectedClaims=claims; box.style.display="block";
+}
+function useClaim(i){
+ var x=window.detectedClaims&&window.detectedClaims[i]; if(!x)return;
+ document.getElementById("claim").value=x.text;
+ verify();
+}
+
 var DOCS=(window.VP_CATALOG&&Array.isArray(window.VP_CATALOG.documents))?window.VP_CATALOG.documents:[];
 var selectedFile=null;
 var transcriber=null;
