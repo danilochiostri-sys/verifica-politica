@@ -14,7 +14,24 @@ jobs:
       - name: Acquisisci fonti ufficiali
         run: python scripts/sync_sources.py
       - name: Costruisci catalogo statico
-        run: python scripts/build_catalog.py
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from datetime import datetime, timezone
+          root=Path(".")
+          s=json.loads((root/"data/sources.json").read_text(encoding="utf-8"))
+          c=json.loads((root/"data/curated.json").read_text(encoding="utf-8")) if (root/"data/curated.json").exists() else {}
+          docs=(s.get("documents") or [])+(c.get("records") or [])
+          seen=set(); unique=[]
+          for d in docs:
+              k=(d.get("title","").strip(),d.get("authority","").strip(),d.get("reference_code","").strip())
+              if k not in seen:
+                  seen.add(k); unique.append(d)
+          payload={"updated_at":s.get("updated_at") or datetime.now(timezone.utc).isoformat(),"sources":s.get("sources") or c.get("sources") or [],"documents":unique}
+          (root/"data/catalog.js").write_text("window.VP_CATALOG="+json.dumps(payload,ensure_ascii=False,separators=(",",":"))+";\n",encoding="utf-8")
+          print("catalog documents:",len(unique))
+          PY
       - name: Commit aggiornamenti
         run: |
           git config user.name "Verifica Politica Bot"
