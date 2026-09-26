@@ -62,7 +62,7 @@ main{max-width:1080px;margin:auto;padding:34px 20px 64px}.ey{font-size:13px;font
 </main>
 
 <script>
-var DOCS=[];
+var DOCS=(window.VP_CATALOG&&Array.isArray(window.VP_CATALOG.documents))?window.VP_CATALOG.documents:[];
 var selectedFile=null;
 var transcriber=null;
 
