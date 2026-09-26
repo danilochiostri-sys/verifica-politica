@@ -215,7 +215,7 @@ function nbBuildGroundedAnswer(question,docs){
  }
  return lines.map(function(x){return '<div style="margin-top:8px">'+x+'</div>';}).join("");
 }
-async async function notebookAsk(){
+async function notebookAsk(){
  var input=document.getElementById("nbQuestion"), q=String(input&&input.value||"").trim();
  if(!q)return;
  var box=document.getElementById("nbMessages");
