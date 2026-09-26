@@ -118,11 +118,19 @@ SELECT DISTINCT ?atto ?title ?date ?type ?identifier WHERE {?atto a ocd:atto; oc
        if uri or title:add(out,title=title or uri.rsplit("/",1)[-1],authority="Camera dei deputati",document_type=b("type") or "atto parlamentare",date=b("date"),version="Open Data OCD",article="",status="iter",url=uri.replace("http://","https://"),excerpt="",reference_code=b("identifier"),source_url="https://dati.camera.it/",keywords=re.findall(r"[a-z0-9]+",(title or "").lower()))
     except Exception as e: print("Camera",e)
     return out
+MINISTRY_FEEDS=[
+  ("https://www.mimit.gov.it/index.php/it/notizie-stampa?format=feed&type=rss","Ministero delle Imprese e del Made in Italy","ministero"),
+  ("https://api.protezionecivile.it/default/dpcPortalGenerateRss?categoria=normativa","Dipartimento della Protezione Civile","normativa"),
+  ("https://api.protezionecivile.it/default/dpcPortalGenerateRss?categoria=comunicato_stampa","Dipartimento della Protezione Civile","comunicato stampa")
+]
+
 def main():
     docs=normattiva()
     for u in ["https://www.senato.it/static/bgt/UltimiAtti/feedDDL.xml","https://www.senato.it/static/bgt/UltimiAtti/feedMDDL.xml","https://www.senato.it/static/bgt/UltimiAtti/feedADG.xml","https://www.senato.it/static/bgt/UltimiAtti/feedDOC.xml"]: docs+=rss(u,"Senato della Repubblica","atto parlamentare",80)
     docs+=camera()
     docs+=rss("https://www.gazzettaufficiale.it/servizi/rss","Gazzetta Ufficiale","pubblicazione ufficiale",120)
+    for feed_url,authority,kind in MINISTRY_FEEDS:
+      docs+=rss(feed_url,authority,kind,80)
     seen=set(); clean=[]
     for d in docs:
       k=(d.get("title",""),d.get("authority",""),d.get("url",""))
@@ -150,6 +158,7 @@ def main():
       {"id":"normattiva","name":"Normattiva / dati.normattiva.it","type":"normativa","url":"https://dati.normattiva.it/","coverage":"Atti normativi, versioni e multivigenza","connected":True},
       {"id":"gazzetta","name":"Gazzetta Ufficiale","type":"pubblicazione","url":"https://www.gazzettaufficiale.it/","coverage":"Pubblicazione ufficiale degli atti","connected":True},
       {"id":"senato","name":"Senato della Repubblica","type":"parlamento","url":"https://dati.senato.it/","coverage":"DDL, iter, documenti e RSS","connected":True},
-      {"id":"camera","name":"Camera dei deputati – Open Data","type":"parlamento","url":"https://dati.camera.it/","coverage":"Atti parlamentari e dati aperti","connected":True}], "documents":clean},ensure_ascii=False,indent=2),encoding="utf-8")
+      {"id":"camera","name":"Camera dei deputati – Open Data","type":"parlamento","url":"https://dati.camera.it/","coverage":"Atti parlamentari e dati aperti","connected":True},
+      {"id":"ministeri","name":"Ministeri e Presidenza del Consiglio","type":"governo","url":"https://www.gov.it/","coverage":"Feed e comunicazioni istituzionali disponibili via RSS","connected":True}], "documents":clean},ensure_ascii=False,indent=2),encoding="utf-8")
     print("Wrote",len(clean),"records")
 if __name__=="__main__":main()
