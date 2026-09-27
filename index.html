@@ -334,6 +334,7 @@ async function notebookAsk(){
  input.value="";
  box.innerHTML+='<div class="nb-msg nb-assistant" id="nbLoading"><span class="semantic-dot"></span> Ricerca nelle fonti selezionate…</div>';
  var status=document.getElementById("nbLoading");
+ await ensureNotebookCatalog();
  var docs=nbSelectedDocs().slice(0,120);
  if(!docs.length){
    status.innerHTML="<b>Nessuna fonte selezionata.</b><br>Seleziona almeno una fonte nel quaderno.";
@@ -655,6 +656,22 @@ function useClaim(i){
 
 var DOCS=(window.VP_CATALOG&&Array.isArray(window.VP_CATALOG.documents))?window.VP_CATALOG.documents:[];
 var selectedFile=null;
+async function ensureNotebookCatalog(){
+ if(Array.isArray(DOCS)&&DOCS.length)return DOCS;
+ try{
+   var r=await fetch("data/sources.json",{cache:"no-store"});
+   if(r.ok){
+     var j=await r.json();
+     if(Array.isArray(j.documents)&&j.documents.length){
+       DOCS=j.documents.slice();
+       window.VP_CATALOG=window.VP_CATALOG||{};
+       window.VP_CATALOG.documents=DOCS;
+       return DOCS;
+     }
+   }
+ }catch(e){}
+ return DOCS;
+}
 var transcriber=null;
 window.nbSelected=new Set();
 
@@ -1044,11 +1061,10 @@ async function verify(){
 // Inizializzazione dopo il caricamento delle definizioni
 try{
  loadLastNotebookNote();
- renderNotebookSources();
- renderSourceFreshness();
+ ensureNotebookCatalog().then(function(){renderNotebookSources();renderSourceFreshness();}).catch(function(){renderNotebookSources();renderSourceFreshness();});
 }catch(initError){
  console.error("Verifica Politica: inizializzazione non riuscita",initError);
 }
 </script>
 </body>
-</html<
+</html>
