@@ -305,20 +305,26 @@ function nbBuildGroundedAnswer(question,docs){
 }
 function officialUrl(d){
  if(!d)return "#";
- if(d.canonical_url)return d.canonical_url;
- var u=String(d.url||"");
- var m=u.match(/^https:\/\/www\.gazzettaufficiale\.it\/eli\/id\/([^/]+)\/([^/]+)\/(?:sg|SG)$/i);
- if(m){
-   var parts=m[1].split("-");
-   if(parts.length===3){
-     var date=parts[0]+"-"+parts[1]+"-"+parts[2];
-     return "https://www.gazzettaufficiale.it/atto/vediMenuHTML?atto.codiceRedazionale="+encodeURIComponent(m[2])+
-       "&atto.dataPubblicazioneGazzetta="+encodeURIComponent(date)+
-       "&tipoSerie=serie_generale&tipoVigenza=originario";
+ var u=String(d.url||"").trim();
+ var can=String(d.canonical_url||"").trim();
+ var candidates=[can,u];
+ for(var i=0;i<candidates.length;i++){
+   var x=candidates[i];
+   if(!x)continue;
+   var bad=x.match(/^https:\/\/www\.gazzettaufficiale\.it\/eli\/id\/(\d{4}-\d{2}-\d{2})\/([^/]+?)(?:\/)?(?:SG)?$/i);
+   if(bad){
+     var code=bad[2].replace(/SG$/i,"");
+     return "https://www.gazzettaufficiale.it/atto/vediMenuHTML?atto.codiceRedazionale="+encodeURIComponent(code)+"&atto.dataPubblicazioneGazzetta="+encodeURIComponent(bad[1])+"&tipoSerie=serie_generale&tipoVigenza=originario";
    }
+   var m=x.match(/^https:\/\/www\.gazzettaufficiale\.it\/eli\/id\/(\d{4}-\d{2}-\d{2})\/([^/]+)\/(?:sg|SG)$/i);
+   if(m){
+     return "https://www.gazzettaufficiale.it/atto/vediMenuHTML?atto.codiceRedazionale="+encodeURIComponent(m[2])+"&atto.dataPubblicazioneGazzetta="+encodeURIComponent(m[1])+"&tipoSerie=serie_generale&tipoVigenza=originario";
+   }
+   if(x.indexOf("gazzettaufficiale.it")>=0 && x.indexOf("/atto/vediMenuHTML?")>=0)return x;
  }
- return u||"#";
+ return u||can||"#";
 }
+
 async function notebookAsk(){
  var input=document.getElementById("nbQuestion"), q=String(input&&input.value||"").trim();
  window.contentDateForNotebook=document.getElementById("contentDate")&&document.getElementById("contentDate").value||"";
