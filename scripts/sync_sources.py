@@ -151,7 +151,7 @@ def main():
     for d in clean:
       u=str(d.get("url") or "")
       if u.startswith("https://www.gazzettaufficiale.it/eli/id/") and u.lower().endswith("/sg"):
-        d["url"]=u[:-3]+"SG"
+        d["url"]=u.rsplit("/",1)[0]+"/SG"
       if d.get("url") and "gazzettaufficiale.it" in str(d.get("url")):
         d["canonical_url"]=d["url"]
       basis="|".join(str(d.get(k,"") or "") for k in ("title","authority","document_type","date","version","article","status","url","excerpt","reference_code"))
