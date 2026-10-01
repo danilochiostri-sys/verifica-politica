@@ -23,95 +23,173 @@ main{max-width:1080px;margin:auto;padding:34px 20px 64px}.ey{font-size:13px;font
 .semantic-status{margin-top:10px;font-size:12px;color:var(--muted);padding:10px 12px;background:#f8fafc;border-radius:10px}.semantic-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#1d4ed8;margin-right:6px}.comparison-side .mini{font-size:12px;color:var(--muted);margin-top:8px}.analysis-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}.analysis-table th,.analysis-table td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.analysis-table th{font-size:11px;text-transform:uppercase;color:var(--muted)}.temporal-badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef2ff;color:#3730a3;font-size:11px;font-weight:800;margin-top:6px}.timestamp{font-size:11px;color:var(--blue);margin-top:6px}
 .notebook{margin-top:22px}.notebook-layout{display:grid;grid-template-columns:260px minmax(0,1fr);gap:14px}.nb-panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px}.nb-panel h3{font-size:13px;margin:0 0 10px}.nb-source{display:flex;gap:8px;align-items:flex-start;padding:9px 8px;border-radius:10px;margin-top:5px}.nb-source:hover{background:#f7f9fc}.nb-source input{width:auto;margin:2px 0 0}.nb-source label{font-size:12px;font-weight:650;line-height:1.3}.nb-chat{min-height:290px;display:flex;flex-direction:column}.nb-messages{flex:1;min-height:210px;max-height:520px;overflow:auto;padding:2px}.nb-msg{padding:12px 13px;border-radius:14px;margin:7px 0;line-height:1.55;font-size:13px}.nb-user{background:#eef2ff;margin-left:10%}.nb-assistant{background:#f7f8fa;margin-right:5%}.nb-cite{display:inline-flex;align-items:center;border:1px solid #c7d2fe;background:#eef2ff;color:#3730a3;border-radius:7px;padding:1px 6px;margin:0 2px;font-size:11px;font-weight:800;cursor:pointer}.nb-composer{display:flex;gap:8px;margin-top:10px}.nb-composer input{margin:0}.nb-note{margin-top:10px}.nb-note textarea{min-height:110px}.nb-source-card{border-top:1px solid var(--line);padding:10px 0}.nb-source-card:first-child{border-top:0}.nb-source-card b{font-size:12px}.nb-source-card span{display:block;color:var(--muted);font-size:11px;margin-top:3px;line-height:1.4}.nb-empty{padding:18px;border:1px dashed var(--line);border-radius:12px;color:var(--muted);font-size:12px}.nb-kicker{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800}.nb-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.nb-tabs button{padding:7px 10px;font-size:11px}.nb-tabs button.active{background:#172033;color:#fff}.nb-count{font-size:11px;color:var(--muted);margin-left:auto}.nb-citation-row{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}.nb-citation-row a{color:var(--blue);font-weight:750;text-decoration:none;font-size:12px}.nb-source-toggle{width:100%;display:flex;justify-content:space-between;align-items:center;font-size:13px}.nb-source-toggle span:nth-child(2){margin-left:auto;margin-right:7px}.nb-source-list{max-height:420px;overflow:auto}.nb-source-list{max-height:430px;overflow:auto;margin-top:4px}.nb-panel details summary{list-style:none}.nb-panel details summary::-webkit-details-marker{display:none}
 @media(max-width:860px){.notebook-layout{grid-template-columns:1fr}.nb-source-list{max-height:260px;overflow:auto}}
-.fulltext-box{margin-top:12px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fff}.fulltext-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800}.fulltext-passage{margin-top:8px;line-height:1.6;font-size:14px}.fulltext-meta{margin-top:8px;font-size:11px;color:var(--muted)}.citation-loading{font-size:12px;color:var(--muted)}.history{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff}.history summary{cursor:pointer;font-size:12px}.history-list{margin-top:8px}.history-row{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:12px;line-height:1.45}.history-row:first-child{border-top:0}.history-row span{color:var(--muted)}.history-meta{color:var(--muted);text-align:right}.history-meta a{color:var(--blue);font-weight:750;text-decoration:none}@media(max-width:650px){.history-row{grid-template-columns:1fr}.history-meta{text-align:left}.timeline{margin-top:14px;border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff}.timeline h3{margin:0;font-size:13px}.timeline-item{display:grid;grid-template-columns:105px 14px minmax(0,1fr);gap:10px;align-items:start;padding:10px 0;border-top:1px solid var(--line)}.timeline-item:first-child{border-top:0}.timeline-date{font-size:11px;color:var(--muted);font-weight:750}.timeline-dot{width:9px;height:9px;border-radius:50%;background:#64748b;margin-top:4px}.timeline-main{font-size:12px;line-height:1.45}.timeline-main b{display:block}.timeline-main span{display:block;color:var(--muted)}.timeline-main a{color:var(--blue);font-weight:750;text-decoration:none}@media(max-width:650px){.timeline-item{grid-template-columns:78px 14px minmax(0,1fr)}} .official-sources-bottom{margin-top:28px} .method-note-footer{margin-top:24px;padding-top:10px;border-top:1px solid var(--line);font-size:10px;line-height:1.45;color:var(--muted)}</style>
+.fulltext-box{margin-top:12px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fff}.fulltext-label{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800}.fulltext-passage{margin-top:8px;line-height:1.6;font-size:14px}.fulltext-meta{margin-top:8px;font-size:11px;color:var(--muted)}.citation-loading{font-size:12px;color:var(--muted)}.history{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#fff}.history summary{cursor:pointer;font-size:12px}.history-list{margin-top:8px}.history-row{display:grid;grid-template-columns:minmax(0,1fr) 190px;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:12px;line-height:1.45}.history-row:first-child{border-top:0}.history-row span{color:var(--muted)}.history-meta{color:var(--muted);text-align:right}.history-meta a{color:var(--blue);font-weight:750;text-decoration:none}@media(max-width:650px){.history-row{grid-template-columns:1fr}.history-meta{text-align:left}.timeline{margin-top:14px;border:1px solid var(--line);border-radius:14px;padding:14px;background:#fff}.timeline h3{margin:0;font-size:13px}.timeline-item{display:grid;grid-template-columns:105px 14px minmax(0,1fr);gap:10px;align-items:start;padding:10px 0;border-top:1px solid var(--line)}.timeline-item:first-child{border-top:0}.timeline-date{font-size:11px;color:var(--muted);font-weight:750}.timeline-dot{width:9px;height:9px;border-radius:50%;background:#64748b;margin-top:4px}.timeline-main{font-size:12px;line-height:1.45}.timeline-main b{display:block}.timeline-main span{display:block;color:var(--muted)}.timeline-main a{color:var(--blue);font-weight:750;text-decoration:none}@media(max-width:650px){.timeline-item{grid-template-columns:78px 14px minmax(0,1fr)}} .official-sources-bottom{margin-top:28px} .method-note-footer{margin-top:24px;padding-top:10px;border-top:1px solid var(--line);font-size:10px;line-height:1.45;color:var(--muted)}
+/* UI refresh — stile SaaS pulito, ispirato alla semplicità delle piattaforme B2B moderne */
+:root{--bg:#f7f8fa;--surface:#fff;--surface-soft:#f2f4f7;--text:#101828;--muted:#667085;--line:#e4e7ec;--accent:#155eef;--accent-soft:#eff4ff;--success:#039855}
+body{background:var(--bg);color:var(--text)}
+.site-header{background:rgba(255,255,255,.94);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;backdrop-filter:blur(12px)}
+.header-inner{max-width:1160px;margin:auto;padding:13px 22px;display:flex;align-items:center;justify-content:space-between}
+.brand-mark{display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none}
+.brand-mark .logo{width:34px;height:34px;border-radius:10px;font-size:13px}
+.brand strong{font-size:14px}.brand small{font-size:10px}
+.header-status{font-size:11px;color:var(--muted);font-weight:650}
+.app-main{max-width:1120px;padding:0 22px 70px}
+.hero{text-align:center;padding:66px 10px 38px}
+.hero .ey{font-size:11px}.hero h1{font-size:48px;letter-spacing:-.045em;line-height:1.04;margin:12px 0 16px}.hero h1 span{color:#667085}
+.hero-lead{max-width:660px;margin:auto;color:var(--muted);font-size:15px;line-height:1.65}
+.workspace{max-width:900px;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 14px 36px rgba(16,24,40,.05)}
+.workspace-head,.notebook-top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start}
+.workspace h2,.notebook h2{font-size:22px;letter-spacing:-.02em;margin:5px 0 0}.sample-link{background:none;color:var(--accent);padding:6px 0;font-size:12px}.sample-link:hover{text-decoration:underline}
+.field-label{font-size:11px;font-weight:800;color:#344054;letter-spacing:.02em}.field-label span{font-weight:600;color:#98a2b3;margin-left:4px}
+.source-input{margin-top:22px}.source-input input{height:48px;border-color:#d0d5dd;border-radius:12px}.claim-input{margin-top:16px}.claim-input textarea{min-height:150px;border-color:#d0d5dd;border-radius:12px;font-size:15px;line-height:1.55}
+.input-footer{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-top:16px}.date-field{max-width:240px;flex:1}.date-field input{height:42px;font-size:13px}.field-hint{font-size:10px;color:var(--muted);margin-top:6px}
+.primary-action{height:44px;padding:0 20px;border-radius:11px;background:var(--text);font-size:13px}.primary-action span,.modern-composer button span{margin-left:7px}.input-hint{margin-top:12px;color:#98a2b3;font-size:11px}.input-hint span{color:var(--success);font-weight:900;margin-right:5px}
+.result{margin:20px 0 0}.result:empty{display:none}
+.notebook-modern{margin:42px auto 0;max-width:1050px;background:transparent;border:0;box-shadow:none;padding:0}
+.notebook-top{margin-bottom:15px;padding:0 4px}.notebook-top p{color:var(--muted);font-size:12px;margin:7px 0 0;line-height:1.5}.notebook-count{font-size:11px;color:var(--muted)}
+.notebook-layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:14px}.nb-panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:0 8px 24px rgba(16,24,40,.035)}
+.source-panel{padding:10px}.source-toggle{width:100%;background:none;color:var(--text);padding:12px 10px;border-radius:10px;display:flex;justify-content:space-between;font-size:13px}.source-toggle:hover{background:var(--surface-soft)}.source-toggle-right{color:var(--muted);display:flex;gap:8px}
+.sources-collapsed{display:none;padding:4px}.sources-collapsed.open{display:block}.nb-tabs{margin-top:5px}.nb-source-list{max-height:390px}.nb-chat-modern{min-height:360px;padding:18px}.nb-messages{min-height:250px;max-height:460px}.nb-msg{border:0;box-shadow:none}.assistant-label{text-transform:uppercase;letter-spacing:.06em;color:#98a2b3;font-size:9px;font-weight:800;margin-bottom:6px}
+.modern-composer{border:1px solid #d0d5dd;border-radius:13px;padding:5px;background:#fff}.modern-composer input{border:0!important;box-shadow:none!important;font-size:13px}.modern-composer button{padding:10px 14px;border-radius:9px;font-size:12px}
+.nb-actions{display:flex;gap:14px;margin-top:9px}.text-action{background:none;color:#667085;padding:5px 0;font-size:11px}.text-action:hover{color:var(--accent)}
+.nb-note{margin-top:10px}.claims-panel{margin-top:22px;background:var(--surface)}.claims-panel h2{font-size:18px;margin:0}.claims-panel>p{font-size:11px;color:var(--muted)}
+.steps-modern{display:grid;grid-template-columns:repeat(3,1fr);gap:0;max-width:1050px;margin:36px auto 0;border-top:1px solid var(--line)}
+.steps-modern>div{padding:19px 18px;border-right:1px solid var(--line)}.steps-modern>div:last-child{border-right:0}.steps-modern span{display:block;color:#98a2b3;font-size:10px;font-weight:800;margin-bottom:8px}.steps-modern strong{display:block;font-size:12px}.steps-modern small{display:block;margin-top:5px;color:var(--muted);font-size:10px;line-height:1.45}
+.app-footer{max-width:1050px;margin:42px auto 0;padding-top:20px;border-top:1px solid var(--line)}.footer-method{font-size:9px;color:#98a2b3;line-height:1.5;margin-bottom:22px}.official-sources-bottom{margin:0;padding:0;border:0}.footer-source-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:11px}.footer-source-head strong{font-size:11px}.footer-source-head span{font-size:9px;color:#98a2b3}.official-sources-bottom .sources{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.official-sources-bottom .source{border:1px solid var(--line);box-shadow:none;padding:10px;border-radius:10px}.official-sources-bottom .source strong{font-size:10px}.official-sources-bottom .source span{font-size:9px;line-height:1.35}.footer-sync{font-size:9px;color:#98a2b3;margin-top:9px}
+@media(max-width:820px){.hero h1{font-size:38px}.notebook-layout{grid-template-columns:1fr}.official-sources-bottom .sources{grid-template-columns:repeat(2,1fr)}.steps-modern{grid-template-columns:1fr}.steps-modern>div{border-right:0;border-bottom:1px solid var(--line)}.input-footer{align-items:stretch;flex-direction:column}.date-field{max-width:none}.main-actions{justify-content:flex-end}}
+@media(max-width:520px){.app-main{padding:0 14px 50px}.header-inner{padding:11px 14px}.header-status{display:none}.hero{padding:48px 8px 28px}.hero h1{font-size:32px}.workspace{padding:17px;border-radius:18px}.workspace-head{display:block}.sample-link{margin-top:9px}.official-sources-bottom .sources{grid-template-columns:1fr}}
+</style>
 <script src="data/catalog.js" onerror="window.VP_CATALOG=null"></script></head>
 <body>
-<header><div class="logo">VP</div><div class="brand"><strong>Verifica Politica</strong><small>Verifica documentale di informazioni politiche</small></div></header>
-<main>
-<section><div class="ey">Controlla un'informazione</div><h1>Confronta una dichiarazione politica con le fonti ufficiali</h1><p class="lead">Inserisci la fonte dell'informazione e il testo da controllare. Il sistema non esprime un giudizio politico: mette a confronto l'affermazione con le fonti ufficiali e mostra le evidenze utilizzate.</p></section>
-
-<section class="card">
-<div class="grid">
-<label>Fonte / URL
-<input id="src" type="text" placeholder="https://... articolo, YouTube, pagina web" onblur="detectContentDate()">
-<div class="help">Puoi incollare un articolo, una pagina o un video YouTube.</div>
-<div style="margin-top:12px"><label>Data del contenuto (facoltativa)
-<input id="contentDate" type="date">
-<div class="help">Serve per confrontare la dichiarazione con lo stato delle fonti a quella data. Se non la conosci, lascia vuoto.</div><div id="detectedDate" class="semantic-status" style="display:none;margin-top:8px"></div>
-</label></div>
-</label>
-<label>Informazione da verificare
-<textarea id="claim" placeholder="Esempio: Il decreto-legge 17 settembre 2026, n. 162 è già stato convertito definitivamente in legge."></textarea>
-<div class="help">Inserisci una frase o un passaggio da verificare.</div>
-</label>
-</div>
-<div class="actions">
-<button type="button" onclick="verify()">Analizza e confronta</button>
-<button type="button" class="secondary" onclick="sample()">Usa esempio</button>
-</div>
-</section>
-
-<section class="card notebook">
-  <div class="toolbar" style="margin:0 0 12px">
-    <div><div class="nb-kicker">Quaderno documentale</div><h2 style="margin:3px 0 0;font-size:22px">Assistente basato sulle fonti</h2></div>
-    <span id="nbCount" class="nb-count"></span>
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand-mark" href="#" aria-label="Verifica Politica">
+      <div class="logo">VP</div>
+      <div class="brand"><strong>Verifica Politica</strong><small>Fonti istituzionali italiane</small></div>
+    </a>
+    <div class="header-status"><span class="dot"></span> Fonti aggiornate automaticamente</div>
   </div>
-  <div class="help" style="margin:0 0 12px">Come in un notebook: scegli le fonti, fai una domanda e consulta le citazioni direttamente nei documenti disponibili. Le risposte restano vincolate al catalogo istituzionale e non esprimono giudizi politici.</div>
-  <div class="notebook-layout">
-    <aside class="nb-panel">
-      <button id="nbSourcesToggle" type="button" class="secondary nb-source-toggle" aria-expanded="false" onclick="toggleNotebookSources()">
-        <span>Fonti del quaderno</span><span id="nbCountInline"></span><span id="nbSourcesArrow">▸</span>
-      </button>
-      <div id="nbSourcesWrap" style="display:none;margin-top:12px">
-        <div class="nb-tabs">
-          <button type="button" class="active" onclick="nbFilter('all',this)">Tutte</button>
-          <button type="button" onclick="nbFilter('normativa',this)">Normativa</button>
-          <button type="button" onclick="nbFilter('parlamento',this)">Parlamento</button>
-          <button type="button" onclick="nbFilter('governo',this)">Governo</button>
+</header>
+
+<main class="app-main">
+  <section class="hero">
+    <div class="ey">ANALISI DOCUMENTALE</div>
+    <h1>Verifica una dichiarazione.<br><span>Partendo dai documenti ufficiali.</span></h1>
+    <p class="hero-lead">Inserisci un link o una dichiarazione. Il sistema cerca nelle fonti istituzionali collegate e mostra cosa risulta dai documenti, con date e riferimenti.</p>
+  </section>
+
+  <section class="workspace">
+    <div class="workspace-head">
+      <div>
+        <div class="ey">01 · Contenuto</div>
+        <h2>Cosa vuoi verificare?</h2>
+      </div>
+      <button type="button" class="sample-link" onclick="sample()">Prova un esempio →</button>
+    </div>
+
+    <div class="source-input">
+      <div class="field-label">Fonte / URL <span>facoltativa</span></div>
+      <input id="src" type="text" placeholder="Incolla un articolo, una pagina web o un video YouTube" onblur="detectContentDate()">
+    </div>
+
+    <div class="claim-input">
+      <div class="field-label">Informazione da verificare</div>
+      <textarea id="claim" placeholder="Scrivi qui la dichiarazione o il passaggio da confrontare…"></textarea>
+    </div>
+
+    <div class="input-footer">
+      <div class="date-field">
+        <div class="field-label">Data del contenuto <span>facoltativa</span></div>
+        <input id="contentDate" type="date">
+        <div id="detectedDate" class="field-hint" style="display:none"></div>
+      </div>
+      <div class="actions main-actions">
+        <button type="button" class="primary-action" onclick="verify()">Analizza e confronta <span>→</span></button>
+      </div>
+    </div>
+
+    <div class="input-hint"><span>✓</span> La data serve solo per ricostruire lo stato documentale a quel momento. Senza data, la ricerca funziona comunque.</div>
+  </section>
+
+  <div id="out" class="result"></div>
+
+  <section class="notebook notebook-modern">
+    <div class="notebook-top">
+      <div>
+        <div class="ey">02 · Quaderno</div>
+        <h2>Assistente basato sulle fonti</h2>
+        <p>Fai una domanda direttamente sul catalogo istituzionale. Non è necessario inserire prima un URL.</p>
+      </div>
+      <div class="notebook-count"><span id="nbCount"></span></div>
+    </div>
+
+    <div class="notebook-layout">
+      <aside class="nb-panel source-panel">
+        <button id="nbSourcesToggle" type="button" class="source-toggle" aria-expanded="false" onclick="toggleNotebookSources()">
+          <span>Fonti del quaderno</span>
+          <span class="source-toggle-right"><span id="nbCountInline"></span><span id="nbSourcesArrow">▸</span></span>
+        </button>
+        <div id="nbSourcesWrap" class="sources-collapsed">
+          <div class="nb-tabs">
+            <button type="button" class="active" onclick="nbFilter('all',this)">Tutte</button>
+            <button type="button" onclick="nbFilter('normativa',this)">Normativa</button>
+            <button type="button" onclick="nbFilter('parlamento',this)">Parlamento</button>
+            <button type="button" onclick="nbFilter('governo',this)">Governo</button>
+          </div>
+          <div id="nbSources" class="nb-source-list"></div>
         </div>
-        <div id="nbSources" class="nb-source-list"></div>
-      </div>
-      <div class="nb-source-card"><b>+ Contenuto analizzato</b><span>La dichiarazione inserita sopra viene trattata come fonte utente, separata dalle fonti istituzionali.</span></div>
-    </aside>
-    <section class="nb-panel nb-chat">
-      <div id="nbMessages" class="nb-messages">
-        <div class="nb-msg nb-assistant"><b>Assistente documentale</b><br>Fai una domanda sulle fonti del quaderno, ad esempio: <em>“Qual è lo stato dell’iter del D.L. 162/2026 alla data indicata?”</em></div>
-      </div>
-      <div class="nb-composer">
-        <input id="nbQuestion" type="text" placeholder="Chiedi qualcosa sulle fonti…">
-        <button type="button" onclick="notebookAsk()">Chiedi</button>
-      </div>
-      <div class="actions" style="margin-top:9px">
-        <button type="button" class="secondary" onclick="notebookFromClaim()">Usa l’affermazione sopra</button>
-        <button type="button" class="secondary" onclick="saveLastNotebookNote()">Salva ultima risposta</button>
-      </div>
-    </section>
+      </aside>
+
+      <section class="nb-panel nb-chat nb-chat-modern">
+        <div id="nbMessages" class="nb-messages">
+          <div class="nb-msg nb-assistant">
+            <div class="assistant-label">Assistente documentale</div>
+            <div>Chiedimi qualcosa sulle fonti ufficiali, ad esempio: <em>“Qual è lo stato dell’iter del D.L. 162/2026?”</em></div>
+          </div>
+        </div>
+        <div class="nb-composer modern-composer">
+          <input id="nbQuestion" type="text" placeholder="Fai una domanda sulle fonti…">
+          <button type="button" onclick="notebookAsk()">Chiedi <span>→</span></button>
+        </div>
+        <div class="nb-actions">
+          <button type="button" class="text-action" onclick="notebookFromClaim()">Usa l’affermazione sopra</button>
+          <button type="button" class="text-action" onclick="saveLastNotebookNote()">Salva risposta</button>
+        </div>
+      </section>
+    </div>
+    <div id="nbLastNote" class="nb-note"></div>
+  </section>
+
+  <div id="claimsPanel" class="claims-panel card">
+    <h2>Affermazioni individuate</h2>
+    <p>Frasi che possono essere confrontate con documenti ufficiali.</p>
+    <div id="claimsList"></div>
   </div>
-  <div id="nbLastNote" class="nb-note"></div>
-</section>
-<div id="out" class="result"></div>
-<div class="method-note-footer"><b>Metodo:</b> il sistema non assegna un giudizio politico. Confronta il contenuto dichiarato con documenti ufficiali e rende esplicite le date utilizzate.</div>
-<section class="official-sources-bottom"><div class="toolbar"><strong>Fonti ufficiali collegate</strong><span id="sourceFreshness" class="muted" style="font-size:12px">Aggiornamento automatico attivo</span></div>
-<div class="sources">
-<div class="source"><strong><span class="dot"></span>Normattiva / dati.normattiva.it</strong><span>Atti normativi, versioni e multivigenza</span></div>
-<div class="source"><strong><span class="dot"></span>Gazzetta Ufficiale</strong><span>Pubblicazione ufficiale degli atti</span></div>
-<div class="source"><strong><span class="dot"></span>Senato della Repubblica</strong><span>Disegni di legge e iter parlamentari</span></div>
-<div class="source"><strong><span class="dot"></span>Camera dei deputati</strong><span>Atti parlamentari e Open Data</span></div>
-<div class="source"><strong><span class="dot"></span>Governo / Ministeri</strong><span>Documenti e comunicazioni istituzionali</span></div>
-</div><div id="sourceSyncCard" class="notice" style="margin-top:10px"></div>
 
+  <section class="steps-modern">
+    <div><span>01</span><strong>Affermazione</strong><small>Individuiamo ciò che può essere verificato documentalmente.</small></div>
+    <div><span>02</span><strong>Fonti ufficiali</strong><small>Confrontiamo norme, iter parlamentari e documenti istituzionali.</small></div>
+    <div><span>03</span><strong>Evidenza</strong><small>Mostriamo riferimenti, date, versioni e passaggi disponibili.</small></div>
+  </section>
 
-
-<div class="notice" style="margin-top:12px"><b>Principio:</b> l’AI può aiutare a trascrivere, estrarre e normalizzare le affermazioni, ma non attribuisce un giudizio politico. Il risultato è una comparazione tra il contenuto dichiarato e le fonti ufficiali disponibili, con indicazione di data e versione quando presenti.</div><div id="claimsPanel" class="card claims-panel"><h2 style="font-size:18px;margin:0">Affermazioni individuate</h2><p class="muted" style="font-size:12px">Separiamo le frasi che possono essere confrontate con documenti ufficiali dalle opinioni.</p><div id="claimsList"></div></div>
-
-<section class="steps">
-<div class="step"><b>01 — Affermazione</b><span>Identifichiamo ciò che può essere verificato documentalmente.</span></div>
-<div class="step"><b>02 — Fonti</b><span>Confrontiamo con documenti istituzionali catalogati.</span></div>
-<div class="step"><b>03 — Evidenza</b><span>Mostriamo fonte, documento, data, versione, articolo e passaggio disponibile.</span></div>
-</section>
->
+  <footer class="app-footer">
+    <div class="footer-method">Il sistema non assegna un giudizio politico: confronta il contenuto con documenti ufficiali e rende esplicite le date utilizzate.</div>
+    <section class="official-sources-bottom">
+      <div class="footer-source-head">
+        <strong>Fonti ufficiali collegate</strong>
+        <span id="sourceFreshness">Aggiornamento automatico attivo</span>
+      </div>
+      <div class="sources">
+        <div class="source"><strong><span class="dot"></span>Normattiva</strong><span>Atti normativi, versioni e multivigenza</span></div>
+        <div class="source"><strong><span class="dot"></span>Gazzetta Ufficiale</strong><span>Pubblicazione ufficiale degli atti</span></div>
+        <div class="source"><strong><span class="dot"></span>Senato</strong><span>Disegni di legge e iter parlamentari</span></div>
+        <div class="source"><strong><span class="dot"></span>Camera</strong><span>Atti parlamentari e Open Data</span></div>
+        <div class="source"><strong><span class="dot"></span>Governo e Ministeri</strong><span>Documenti e comunicazioni istituzionali</span></div>
+      </div>
+      <div id="sourceSyncCard" class="footer-sync"></div>
+    </section>
+  </footer>
 </main>
-
 <script>
 
 
@@ -133,8 +211,9 @@ var nbFilterMode="all", nbLastAnswer=null;
 function toggleNotebookSources(){
  var wrap=document.getElementById("nbSourcesWrap"), btn=document.getElementById("nbSourcesToggle"), arrow=document.getElementById("nbSourcesArrow");
  if(!wrap||!btn)return;
- var open=wrap.style.display==="block";
- wrap.style.display=open?"none":"block";
+ var open=wrap.classList.contains("open");
+ wrap.classList.toggle("open",!open);
+ wrap.style.display=!open?"block":"none";
  btn.setAttribute("aria-expanded",String(!open));
  if(arrow)arrow.textContent=open?"▸":"▾";
 }
