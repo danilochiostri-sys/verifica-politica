@@ -58,7 +58,7 @@ body{background:var(--bg);color:var(--text)}
 .app-footer{max-width:1050px;margin:42px auto 0;padding-top:20px;border-top:1px solid var(--line)}.footer-method{font-size:9px;color:#98a2b3;line-height:1.5;margin-bottom:22px}.official-sources-bottom{margin:0;padding:0;border:0}.footer-source-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:11px}.footer-source-head strong{font-size:11px}.footer-source-head span{font-size:9px;color:#98a2b3}.official-sources-bottom .sources{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.official-sources-bottom .source{border:1px solid var(--line);box-shadow:none;padding:10px;border-radius:10px}.official-sources-bottom .source strong{font-size:10px}.official-sources-bottom .source span{font-size:9px;line-height:1.35}.footer-sync{font-size:9px;color:#98a2b3;margin-top:9px}
 @media(max-width:820px){.hero h1{font-size:38px}.notebook-layout{grid-template-columns:1fr}.official-sources-bottom .sources{grid-template-columns:repeat(2,1fr)}.steps-modern{grid-template-columns:1fr}.steps-modern>div{border-right:0;border-bottom:1px solid var(--line)}.input-footer{align-items:stretch;flex-direction:column}.date-field{max-width:none}.main-actions{justify-content:flex-end}}
 @media(max-width:520px){.app-main{padding:0 14px 50px}.header-inner{padding:11px 14px}.header-status{display:none}.hero{padding:48px 8px 28px}.hero h1{font-size:32px}.workspace{padding:17px;border-radius:18px}.workspace-head{display:block}.sample-link{margin-top:9px}.official-sources-bottom .sources{grid-template-columns:1fr}}
-</style>
+.sync-status{padding:9px 11px;border-radius:9px;font-size:10px;font-weight:700}.sync-status.fresh{background:#ecfdf3;color:#027a48}.sync-status.check{background:#fffaeb;color:#b54708}.sync-status.stale{background:#fef3f2;color:#b42318}.footer-sync a{color:var(--accent);font-weight:700;text-decoration:none}</style>
 <script src="data/catalog.js" onerror="window.VP_CATALOG=null"></script></head>
 <body>
 <header class="site-header">
@@ -202,10 +202,15 @@ function renderSourceFreshness(){
  var ts=window.VP_CATALOG&&window.VP_CATALOG.updated_at;
  var n=window.VP_CATALOG&&Array.isArray(window.VP_CATALOG.documents)?window.VP_CATALOG.documents.length:0;
  if(!ts){
-   el.innerHTML='<b>Sincronizzazione:</b> stato non disponibile. Le fonti elencate sono configurate ma il catalogo pubblicato non contiene una data di aggiornamento.';
+   el.innerHTML='<b>Stato fonti:</b> non determinabile. Il catalogo pubblicato non contiene una data di sincronizzazione.';
    return;
  }
- el.innerHTML='<b>Fonti collegate automaticamente.</b> Ultimo aggiornamento riuscito del catalogo: '+esc(formatCatalogDate(ts))+' · '+n+' record. Il sito usa questo catalogo aggiornato da GitHub Actions; quando una fonte non risponde, non viene inventata alcuna informazione.';
+ var dt=new Date(ts), age=(Date.now()-dt.getTime())/3600000;
+ var state=age<=12?"AGGIORNATO":(age<=36?"VERIFICA CONSIGLIATA":"NON RECENTE");
+ var cls=age<=12?"fresh":(age<=36?"check":"stale");
+ el.innerHTML='<div class="sync-status '+cls+'"><b>Stato fonti: '+state+'</b> · Ultima sincronizzazione effettiva: '+esc(formatCatalogDate(ts))+' · '+n+' record</div>'+
+ '<div style="margin-top:5px">La base documentale viene sincronizzata automaticamente da GitHub Actions. Questa data indica il catalogo realmente pubblicato, non solo la pianificazione del workflow.</div>'+
+ '<div style="margin-top:5px"><a href="https://github.com/danilochiostri-sys/verifica-politica/actions" target="_blank" rel="noopener">Controlla esecuzioni di sincronizzazione →</a></div>';
 }
 var nbFilterMode="all", nbLastAnswer=null;
 function toggleNotebookSources(){
