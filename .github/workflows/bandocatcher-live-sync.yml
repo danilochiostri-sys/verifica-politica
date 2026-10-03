@@ -1,0 +1,29 @@
+name: BandoCatcher — live sources
+on:
+  schedule:
+    - cron: "23 */6 * * *"
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bandocatcher
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Sync official sources
+        run: python ingestion/sync.py
+      - name: Persist dataset
+        working-directory: .
+        run: |
+          git config user.name "BandoCatcher Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add bandocatcher/data/opportunities.js bandocatcher/data/sync-status.json
+          git diff --cached --quiet && exit 0
+          git commit -m "BandoCatcher: sync official opportunities"
+          git push
