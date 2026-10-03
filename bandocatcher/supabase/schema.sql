@@ -85,3 +85,32 @@ for each row execute procedure public.handle_new_user();
 
 -- Email addresses live in Supabase Auth (auth.users).
 -- Do not expose auth.users through a public application table.
+
+
+create table if not exists public.consent_events (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  consent_type text not null,
+  policy_version text not null,
+  granted boolean not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.consent_events enable row level security;
+
+drop policy if exists consent_events_select_own on public.consent_events;
+drop policy if exists consent_events_insert_own on public.consent_events;
+
+create policy consent_events_select_own
+on public.consent_events for select
+using (auth.uid() = user_id);
+
+create policy consent_events_insert_own
+on public.consent_events for insert
+with check (auth.uid() = user_id);
+
+-- Recommended policy:
+-- 1) Account/service processing: documented in the privacy notice with its applicable legal basis.
+-- 2) Optional opportunity-alert emails: explicit opt-in if used as the selected legal basis.
+-- 3) Marketing/promotional emails: separate opt-in consent; never bundle with service registration.
+-- 4) Withdrawal creates a new event with granted=false; do not overwrite audit history.
