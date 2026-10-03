@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>BandoCatcher — Accesso</title>
+<style>
+body{margin:0;background:#f5f7fb;color:#101828;font:16px system-ui,sans-serif}.wrap{max-width:460px;margin:70px auto;padding:20px}.card{background:#fff;border:1px solid #e4e7ec;border-radius:20px;padding:24px}h1{margin:0 0 8px}.muted{color:#667085;line-height:1.5}label{display:block;font-weight:750;font-size:13px;margin-top:16px}input{width:100%;box-sizing:border-box;margin-top:7px;padding:12px;border:1px solid #d0d5dd;border-radius:10px;font:inherit}button{margin-top:16px;width:100%;padding:12px;border:0;border-radius:10px;background:#111827;color:white;font-weight:800;cursor:pointer}.secondary{background:#eef2f6;color:#101828}.msg{margin-top:14px;font-size:13px}.ok{color:#087443}.err{color:#b42318}.back{display:inline-block;margin-top:16px;color:#2563eb;text-decoration:none;font-size:13px}
+</style>
+</head>
+<body><div class="wrap"><div class="card"><div style="font-weight:850">BC · BandoCatcher</div><h1>Accedi o registrati</h1><p class="muted">La ricerca è libera. L'account serve per salvare opportunità e ricevere alert.</p>
+<label>Email<input id="email" type="email" autocomplete="email" placeholder="nome@esempio.it"></label>
+<label>Password<input id="password" type="password" autocomplete="new-password" placeholder="Almeno 8 caratteri"></label>
+<button id="signupBtn" type="button">Crea account</button>
+<button id="loginBtn" class="secondary" type="button">Accedi</button>
+<div id="msg" class="msg"></div><a class="back" href="./">← Torna alle opportunità</a>
+</div></div>
+<script src="supabase/config.js"></script>
+<script type="module">
+const msg=s=>document.getElementById('msg').innerHTML=s;
+let client=null;
+try{
+  const {createClient}=await import('https://esm.sh/@supabase/supabase-js@2');
+  if(!window.BC_SUPABASE || window.BC_SUPABASE.url.includes('YOUR_')) throw new Error('not configured');
+  client=createClient(window.BC_SUPABASE.url,window.BC_SUPABASE.anonKey);
+}catch(e){msg('<span class="err">Account non ancora configurato. La ricerca pubblica resta disponibile.</span>');}
+document.getElementById('signupBtn').onclick=async()=>{
+  if(!client)return;
+  const email=document.getElementById('email').value.trim();
+  const password=document.getElementById('password').value;
+  if(!email)return msg('<span class="err">Inserisci un indirizzo email.</span>');
+  if(password.length<8)return msg('<span class="err">Usa una password di almeno 8 caratteri.</span>');
+  const {error}=await client.auth.signUp({email,password,emailRedirectTo:new URL('./',location.href).toString()});
+  msg(error?'<span class="err">'+error.message+'</span>':'<span class="ok">Registrazione inviata. Controlla la tua email per confermare l’account.</span>');
+};
+document.getElementById('loginBtn').onclick=async()=>{
+  if(!client)return;
+  const email=document.getElementById('email').value.trim();
+  const password=document.getElementById('password').value;
+  const {error}=await client.auth.signInWithPassword({email,password});
+  if(error)return msg('<span class="err">'+error.message+'</span>');
+  location.href='./';
+};
+</script></body></html>
