@@ -19,9 +19,12 @@ class Opportunity:
     tags: list[str]
     source_id: str
     source_name: str
-    official_url: str
+    official_url: str | None
     last_verified: str
     external_id: str | None = None
+    # Fail closed: a connector must explicitly prove that official_url is
+    # a user-facing, record-specific source page rather than a portal home.
+    specific_link: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
