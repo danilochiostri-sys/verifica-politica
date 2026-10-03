@@ -8,6 +8,7 @@ sys.path.insert(0, str(ROOT))
 
 from ingestion.connectors.ted import fetch as fetch_ted
 from ingestion.connectors.funding_tenders import fetch as fetch_ft
+from ingestion.connectors.inpa import fetch as fetch_inpa
 
 DEMO = ROOT / "data" / "opportunities.js"
 META = ROOT / "data" / "sync-status.json"
@@ -29,7 +30,7 @@ def main():
     items = []
     attempted = []
 
-    for name, fn in (("ted", fetch_ted), ("funding-tenders", fetch_ft)):
+    for name, fn in (("ted", fetch_ted), ("funding-tenders", fetch_ft), ("inpa", fetch_inpa)):
         attempted.append(name)
         try:
             items.extend(fn())
