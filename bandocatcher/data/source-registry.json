@@ -1,0 +1,20 @@
+{
+  "schema_version":"1.0",
+  "sources":[
+    {"id":"funding-tenders","name":"Funding & Tenders Portal","category":"grant","authority_level":"PRIMARY_OFFICIAL","country":"EU","url":"https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/home","connector":"funding_tenders_api"},
+    {"id":"ted","name":"TED — Tenders Electronic Daily","category":"tender","authority_level":"PRIMARY_OFFICIAL","country":"EU","url":"https://ted.europa.eu/","connector":"ted_api"},
+    {"id":"invitalia","name":"Invitalia","category":"grant","authority_level":"PRIMARY_OFFICIAL","country":"IT","url":"https://www.invitalia.it/","connector":"html_discovery"},
+    {"id":"opencoesione","name":"OpenCoesione","category":"grant","authority_level":"OFFICIAL_SUPPORT","country":"IT","url":"https://opencoesione.gov.it/","connector":"open_data"},
+    {"id":"italiadomani","name":"Italia Domani","category":"grant","authority_level":"PRIMARY_OFFICIAL","country":"IT","url":"https://www.italiadomani.gov.it/","connector":"html_discovery"},
+    {"id":"mimit","name":"MIMIT","category":"grant","authority_level":"PRIMARY_OFFICIAL","country":"IT","url":"https://www.mimit.gov.it/","connector":"html_discovery"},
+    {"id":"inpa","name":"inPA","category":"competition","authority_level":"PRIMARY_OFFICIAL","country":"IT","url":"https://www.inpa.gov.it/","connector":"web_discovery"},
+    {"id":"gazzetta-concorsi","name":"Gazzetta Ufficiale — Concorsi","category":"competition","authority_level":"PRIMARY_OFFICIAL","country":"IT","url":"https://www.gazzettaufficiale.it/30giorni/concorsi","connector":"html_discovery"},
+    {"id":"anac-bdncp","name":"ANAC — BDNCP","category":"tender","authority_level":"PRIMARY_OFFICIAL","country":"IT","url":"https://pubblicita.anticorruzione.it/free-search","connector":"open_data"},
+    {"id":"acquistinrete","name":"Acquisti in Rete PA","category":"tender","authority_level":"PRIMARY_OFFICIAL","country":"IT","url":"https://www.acquistinretepa.it/","connector":"html_discovery"},
+    {"id":"invitalia-gare","name":"Invitalia Gare","category":"tender","authority_level":"PRIMARY_OFFICIAL","country":"IT","url":"https://gareappalti.invitalia.it/","connector":"html_discovery"},
+    {"id":"servizio-contratti-pubblici","name":"Servizio Contratti Pubblici","category":"tender","authority_level":"OFFICIAL_SUPPORT","country":"IT","url":"https://www.serviziocontrattipubblici.it/","connector":"html_discovery"},
+    {"id":"euknow","name":"EUknow — Portale Bandi","category":"discovery","authority_level":"PRIVATE_AGGREGATOR","country":"IT","url":"https://euknow.it/portale-bandi/","connector":"discovery_only"},
+    {"id":"info-cooperazione","name":"Info-Cooperazione","category":"discovery","authority_level":"PRIVATE_AGGREGATOR","country":"IT","url":"https://www.info-cooperazione.it/Category/Bandi","connector":"discovery_only"},
+    {"id":"concorsi-it","name":"Concorsi.it","category":"discovery","authority_level":"PRIVATE_AGGREGATOR","country":"IT","url":"https://www.concorsi.it/","connector":"discovery_only"}
+  ]
+}
