@@ -56,7 +56,7 @@ def fetch(limit: int = 50) -> list[Opportunity]:
         status_code = _first(d.get("status"))
         status = "OPEN" if status_code == "31094501" else ("FORTHCOMING" if status_code == "31094503" else "CLOSED")
         label = {"OPEN":"APERTO","FORTHCOMING":"IN APERTURA","CLOSED":"CHIUSO"}[status]
-        official = "https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/opportunities/topic-details/" + urllib.parse.quote(identifier, safe="-_.")
+        official = "https://ec.europa.eu/info/funding-tenders/opportunities/portal/screen/opportunities/topic-details-tr/" + urllib.parse.quote(identifier, safe="-_.")
         out.append(Opportunity(
             id=f"eu-{identifier}",
             external_id=identifier,
@@ -76,6 +76,6 @@ def fetch(limit: int = 50) -> list[Opportunity]:
             source_id="funding-tenders",
             source_name="Funding & Tenders Portal",
             official_url=official,
-            last_verified=now,
+            last_verified=now,\n            specific_link=True,
         ))
     return out

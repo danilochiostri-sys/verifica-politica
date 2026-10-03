@@ -1,0 +1,21 @@
+name: BandoCatcher — connector tests
+on:
+  pull_request:
+    paths:
+      - 'bandocatcher/ingestion/**'
+      - 'bandocatcher/tests/**'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bandocatcher
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run contract tests
+        run: |
+          python -m pip install --quiet pytest
+          pytest -q
