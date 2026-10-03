@@ -55,7 +55,7 @@ def fetch(limit: int = 50) -> list[Opportunity]:
         country = _first(n.get("buyer-country")) or "EU"
         deadline = _first(n.get("deadline-receipt-tender-date")) or None
         cpv = _values(n.get("classification-cpv"))
-        official = f"https://ted.europa.eu/en/notice/-/detail/{pub}" if pub else "https://ted.europa.eu/"
+        official = f"https://ted.europa.eu/en/notice/-/detail/{pub}" if pub else None
         out.append(Opportunity(
             id=f"ted-{pub or abs(hash(title))}",
             external_id=pub or None,
@@ -75,6 +75,6 @@ def fetch(limit: int = 50) -> list[Opportunity]:
             source_id="ted",
             source_name="TED — Tenders Electronic Daily",
             official_url=official,
-            last_verified=now,
+            last_verified=now,\n            specific_link=bool(pub),
         ))
     return out
