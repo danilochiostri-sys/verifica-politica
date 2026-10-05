@@ -37,3 +37,20 @@ def test_parse_detail():
     assert item.deadline == "31 Ottobre 2026 14:00"
     assert item.specific_link is True
     assert item.external_id == "abc123"
+
+from ingestion.connectors.inpa import discover
+
+API = {
+  "totalElements": 2,
+  "content": [
+    {"concorsoId": "abc123", "titolo": "Concorso pubblico"},
+    {"concorsoId": "abc123", "titolo": "duplicato"},
+    {"concorsoId": "def456", "titolo": "Avviso"}
+  ]
+}
+
+def test_discover_uses_api_records_and_specific_links():
+    rows = discover(api_payload=API)
+    assert [x["external_id"] for x in rows] == ["abc123", "def456"]
+    assert rows[0]["official_url"].endswith("concorso_id=abc123")
+    assert rows[1]["official_url"].endswith("concorso_id=def456")
