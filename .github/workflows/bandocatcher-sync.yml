@@ -1,6 +1,9 @@
 name: BandoCatcher — sync opportunità
 
 on:
+  push:
+    paths:
+      - '.github/workflows/bandocatcher-sync.yml'
   schedule:
     - cron: "11 */3 * * *"
   workflow_dispatch:
