@@ -1,0 +1,47 @@
+name: BandoCatcher — live source health
+on:
+  schedule:
+    - cron: "41 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bandocatcher
+    steps:
+      - uses: actions/checkout@v4
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test runner
+        run: python -m pip install --quiet pytest
+      - name: Run connector contract tests
+        run: pytest -q
+      - name: Probe live inPA source
+        run: |
+          python - <<'PY'
+          import json
+          from ingestion.connectors.inpa import discover, fetch
+
+          discovered = discover(limit=10)
+          items = fetch(limit=10)
+          report = {
+              "source": "inpa",
+              "discovered": len(discovered),
+              "parsed": len(items),
+              "specific_links": sum(1 for item in items if item.specific_link and item.official_url),
+              "unknown_status": sum(1 for item in items if item.status == "UNKNOWN"),
+              "missing_deadline": sum(1 for item in items if not item.deadline),
+          }
+          print(json.dumps(report, ensure_ascii=False))
+          if not discovered:
+              raise SystemExit("INPA_LIVE_PROBE_NO_RECORDS")
+          if any(not (item.specific_link and item.official_url) for item in items):
+              raise SystemExit("INPA_LIVE_PROBE_NON_SPECIFIC_LINK")
+          PY

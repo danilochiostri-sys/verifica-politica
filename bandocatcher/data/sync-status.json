@@ -1,1 +1,1 @@
-{"updated_at":null,"sources_attempted":[],"items":4,"errors":[],"mode":"demo"}
+{"updated_at":null,"sources_attempted":["ted","funding-tenders"],"items_seen":0,"items_published":0,"unresolved_specific_links":0,"errors":[],"mode":"demo","note":"Awaiting first GitHub Actions runtime sync; inPA connector is deployed but not runtime-verified in this environment."}
