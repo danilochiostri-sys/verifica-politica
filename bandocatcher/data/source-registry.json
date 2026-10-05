@@ -1010,6 +1010,18 @@
       "role": "official",
       "status": "CATALOGUED",
       "specific_link_required": true
+    },
+    {
+      "id": "masaf",
+      "name": "MASAF",
+      "country_region": "IT",
+      "category": "grant",
+      "authority_level": "PRIMARY_OFFICIAL",
+      "url": "https://www.masaf.gov.it/",
+      "connector": "web",
+      "role": "official",
+      "status": "CATALOGUED",
+      "specific_link_required": true
     }
   ]
 }
