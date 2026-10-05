@@ -1,3 +1,4 @@
+import json
 import re
 import urllib.parse
 import urllib.request
@@ -6,6 +7,7 @@ from html.parser import HTMLParser
 from .base import Opportunity
 
 LIST_URL = "https://www.inpa.gov.it/bandi-e-avvisi/"
+SEARCH_URL = "https://portale.inpa.gov.it/concorsi-smart/api/concorso-public-area/search-better"
 DETAIL_PATH = "/bandi-e-avvisi/dettaglio-bando-avviso/?concorso_id="
 
 class _HTML(HTMLParser):
@@ -36,14 +38,65 @@ def _get(url):
     with urllib.request.urlopen(req, timeout=45) as r:
         return r.read().decode("utf-8", errors="replace")
 
+def _post_json(url, payload):
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(url, data=data, method="POST", headers={
+        "User-Agent":"BandoCatcher/0.1",
+        "Accept":"application/json",
+        "Content-Type":"application/json",
+    })
+    with urllib.request.urlopen(req, timeout=45) as r:
+        return json.loads(r.read().decode("utf-8", errors="replace"))
+
 def _abs(href): return urllib.parse.urljoin(LIST_URL, href)
 
 def _detail_id(url):
     m = re.search(r"[?&]concorso_id=([a-fA-F0-9]+)", url)
     return m.group(1) if m else None
 
-def discover(limit=50, html=None):
-    parser = _HTML(); parser.feed(html if html is not None else _get(LIST_URL))
+def _api_id(row):
+    for key in ("concorsoId", "concorso_id", "id", "codice"):
+        value = row.get(key)
+        if value not in (None, ""):
+            return str(value)
+    return None
+
+def _api_title(row):
+    for key in ("titolo", "title", "descrizione"):
+        value = row.get(key)
+        if value:
+            return re.sub(r"\s+", " ", str(value)).strip()
+    return None
+
+def discover(limit=50, html=None, api_payload=None):
+    # inPA renders the public result set client-side. Prefer its official public
+    # search API; retain HTML fixture support for backwards-compatible tests.
+    if api_payload is None and html is None:
+        api_payload = _post_json(SEARCH_URL, {
+            "page": 0,
+            "size": limit,
+            "status": ["OPEN"],
+        })
+    if api_payload is not None:
+        rows = api_payload.get("content") or api_payload.get("data") or []
+        out, seen = [], set()
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            cid = _api_id(row)
+            if not cid or cid in seen:
+                continue
+            seen.add(cid)
+            out.append({
+                "external_id": cid,
+                "official_url": _abs(DETAIL_PATH + urllib.parse.quote(cid, safe="")),
+                "title_hint": _api_title(row) or cid,
+            })
+            if len(out) >= limit:
+                break
+        return out
+
+    parser = _HTML(); parser.feed(html)
     out=[]; seen=set()
     for href,label in parser.links:
         url=_abs(href); cid=_detail_id(url)
@@ -81,7 +134,7 @@ def parse_detail(html, external_id, official_url):
         deadline_precision="EXACT_DATETIME" if closing and re.search(r"\d{1,2}:\d{2}",closing) else ("DATE_ONLY" if closing else "UNKNOWN"),
         description=description,
         beneficiaries=["Candidati in possesso dei requisiti dell'avviso"],
-        requirements=["Verificare requisiti, titoli e modalità di candidatura nella scheda ufficiale"],
+        requirements=["Verificare requisiti, titoli e modalità di candidatura"],
         tags=["inPA","concorsi"], source_id="inpa", source_name="Portale inPA",
         official_url=official_url, last_verified=now, specific_link=True)
 
