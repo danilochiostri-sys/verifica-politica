@@ -119,9 +119,9 @@
       "url": "https://www.inpa.gov.it/",
       "connector": "web",
       "role": "official",
-      "status": "LIVE",
+      "status": "CATALOGUED",
       "specific_link_required": true,
-      "last_verified": "2026-10-04"
+      "activation_status": "READY_PENDING_FIRST_RUNTIME_SYNC"
     },
     {
       "id": "gazzetta-concorsi",
